@@ -83,7 +83,7 @@ exports.fetchItem = async (req, res) => {
 };
 
 // items is an array of objects [{}, {}, {}]
-
+//Making sure Our Stocks changes based on quantity.
 exports.generatereceipts = async (req, res) => {
   const { createdBy, customername, items, total, percentdiscount = 0 } = req.body;
 

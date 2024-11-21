@@ -1,41 +1,41 @@
 //Creating functions that I will use in admin.//
+const {Item} = require('../models/usermodels')
+const{ItemsHistory} = require('../models/itemsHistory')
+const {Invoice} = require ('../models/invoices')
 
-exports.totalSales = async(req, res) =>
-{
 
-}
+// exports.vendorManagement = async(req, res) =>
+// {
 
-exports.totalProfit = async(req,res) => 
-{
+// }
 
-}
+// exports.customerManagement = async(req,res) => 
+// {
 
-exports.totalPurchase = async(req,res) =>
-{
+// }
 
-}
 
-exports.totalStocks = async(req,res) => 
-{
+// exports.totalStocks = async(req,res) => 
+// {
 
-}
+// }
 
-exports.totalQuantity = async(req,res) =>
-{
+// exports.totalQuantity = async(req,res) =>
+// {
 
-}
+// }
 
-exports.inStock = async(req,res) => 
-{
+// exports.inStock = async(req,res) => 
+// {
 
-}
+// }
 
-exports.lowStock = async(req,res) =>
-{
+// exports.lowStock = async(req,res) =>
+// {
 
-}
+// }
 
-exports.chatGpt = async (req, res) => {
+exports.dashboard = async (req, res) => {
     try {
         const [dashboardMetrics, lowStockItems, salesMetrics] = await Promise.all([
             // Aggregation for item-related metrics
@@ -63,7 +63,6 @@ exports.chatGpt = async (req, res) => {
                     },
                 },
             ]),
-            // Aggregation for low stock items
             Item.aggregate([
                 {
                     $match: {
@@ -72,7 +71,6 @@ exports.chatGpt = async (req, res) => {
                 },
                 { $project: { name: 1, quantity: 1, required_quantity: 1, _id: 0 } },
             ]),
-            // Aggregation for sales metrics from itemsHistory
             ItemsHistory.aggregate([
                 {
                     $group: {

@@ -11,4 +11,4 @@ const itemsHistorySchema = new mongoose.Schema({
 });
 
 const ItemsHistory = mongoose.model("ItemsHistory", itemsHistorySchema);
-module.exports = ItemsHistory;
+module.exports = {ItemsHistory};

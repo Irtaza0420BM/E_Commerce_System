@@ -2,6 +2,7 @@ const express = require("express")
 const authController = require('../controllers/authController')
 const inventoryController = require("../controllers/inventroyController")
 const { identifier } = require("../middlewares/authenticate")
+const { dashboard } = require("../controllers/adminController")
 const router = express.Router()
 
 router.post('/signup' , authController.register)  //All debugged, checked, tested, Done.
@@ -19,7 +20,7 @@ router.post('/fetchitem', inventoryController.fetchItem)
 router.post('/readitem', inventoryController.read)
 router.post('/searchcustomer', inventoryController.searchCustomer)
 router.post('/fetchcustomer', inventoryController.fetchCustomer )
-
+router.get('/dashboard', dashboard)
 
 //admin routes:
 
