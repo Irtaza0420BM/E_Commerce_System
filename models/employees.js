@@ -25,13 +25,6 @@ const UserSchema = new mongoose.Schema({
     verified: {type: Boolean, default: false},
 });
 
-// UserSchema.pre('save', async function(next) {
-//     if (!this.isModified('password')) return next();
-//     const salt = await bcrypt.genSalt(10);
-//     this.password = await bcrypt.hash(this.password, salt);
-//     next();
-// });
-
 UserSchema.index ({username : 1})
 UserSchema.index ({email: 1})
 //Why I used 1 here and note "text" is bcuz I want to do sorting, and search by exact user name not like medicine where I might forget some phrase.

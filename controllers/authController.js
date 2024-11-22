@@ -8,7 +8,7 @@ exports.register = async (req, res) => {
      //Issue1: name can be same, how to handle this? We can use phone for login?
      const  {name, username ,password,phone, email, address, cnic} = req.body;
     try{
-        const {error, value}= employeeSchema.validate({name, password, username, phone, email, address, cnic}) //I need to insert Uservalidation. 
+        const {error}= employeeSchema.validate({name, password, username, phone, email, address, cnic}) //I need to insert Uservalidation. 
         if (error)
         {
             return res.status(401).json({success:false, message:"Please make sure to enter valid values."})
@@ -35,7 +35,7 @@ exports.register = async (req, res) => {
     } 
     catch(error)
     {
-        return res.status(500).json({success: false, message: "You need to insert unique email. Username etc."})
+        return res.status(500).json({success: false, message: "Server 500 error, cannot connect to server."}) // I was having an issue the reason was I chaged my scchema of database. corrected that.
     }
 
 };
@@ -100,7 +100,6 @@ exports.signin = async (req, res) => {
             message: "Logged in successfully.",
         });
     } catch (error) {
-        console.error("Error during login:", error);
         return res.status(500).json({
             success: false,
             message: "Internal server error.",
@@ -381,25 +380,6 @@ exports.verifyVerificationCode = async (req, res)=> {
 //     }
 // }
 
-exports.verifyEmployee = async(req, res) => {
-    try {
-        const { employeeId } = req.body;
-        const toVerifyEmployee = await Employee.findOne({ _id: employeeId });
-    
-        if (!toVerifyEmployee) {
-            return res.status(404).json({ success: false, message: "Employee not found." });
-        }
-    
-        toVerifyEmployee.verified = true;
-       result= await toVerifyEmployee.save();
-    
-        res.status(200).json({ success: true, message: "Employee has been verified." , result });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, message: "An error occurred while verifying the employee." });
-    }
-    
-}
 
 exports.islogin = async(req, res) => {
     //To check if I am admin, employee, verified or not.

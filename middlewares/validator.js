@@ -23,7 +23,7 @@ exports.employeeSchema = joi.object({
     email: joi.string().min(6).max(60).required().email({tlds:{ allow:['com', 'net']}}).messages({
         'string.email': 'Only email addresses of the form of abc@abc.com or abc@abc.net are allowed',
     }),
-    username: joi.string().required().pattern(new RegExp('^[a-zA-Z0-9]+$')).min(3).max(30).required().messages({
+    username: joi.string().required().pattern(new RegExp('^[a-zA-Z0-9]+$')).min(3).max(30).messages({
       'string.pattern.base': 'Username can only contain letters and numbers, no spaces or special characters.',
       'string.empty': 'Username is required.',
       'string.min': 'Username must be at least 3 characters long.',

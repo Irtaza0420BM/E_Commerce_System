@@ -1,39 +1,9 @@
 //Creating functions that I will use in admin.//
 const {Item} = require('../models/usermodels')
+const Employee = require('../models/employees');
 const{ItemsHistory} = require('../models/itemsHistory')
 const {Invoice} = require ('../models/invoices')
 
-
-// exports.vendorManagement = async(req, res) =>
-// {
-
-// }
-
-// exports.customerManagement = async(req,res) => 
-// {
-
-// }
-
-
-// exports.totalStocks = async(req,res) => 
-// {
-
-// }
-
-// exports.totalQuantity = async(req,res) =>
-// {
-
-// }
-
-// exports.inStock = async(req,res) => 
-// {
-
-// }
-
-// exports.lowStock = async(req,res) =>
-// {
-
-// }
 
 exports.dashboard = async (req, res) => {
     try {
@@ -109,3 +79,72 @@ exports.dashboard = async (req, res) => {
         res.status(500).json({ error: "Internal Server Error" });
     }
 };
+
+exports.unverifiedemployees = async(req, res) => {
+    try {
+        const unverified = await Employee.find({verified: false})
+
+        res.status(200).json({unverified})
+    } catch (error) {
+        res.status(400).json({message: error})
+    }
+}
+
+exports.verifyEmployee = async(req, res) => {
+    try {
+        const { employeeId } = req.body;
+        const toVerifyEmployee = await Employee.findOne({ _id: employeeId });
+    
+        if (!toVerifyEmployee) {
+            return res.status(404).json({ success: false, message: "Employee not found." });
+        }
+    
+        toVerifyEmployee.verified = true;
+       result= await toVerifyEmployee.save();
+    
+        res.status(200).json({ success: true, message: "Employee has been verified." , result });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: "An error occurred while verifying the employee." });
+    }
+    
+}
+
+
+// exports.areemployeesLogin = async (req,res) => {
+//     // This is my function to check how many employees are logged in, Or when did an employee logged in, logged out. etc.
+// }
+
+
+
+
+// exports.vendorManagement = async(req, res) =>
+// {
+
+// }
+
+// exports.customerManagement = async(req,res) => 
+// {
+
+// }
+
+
+// exports.totalStocks = async(req,res) => 
+// {
+
+// }
+
+// exports.totalQuantity = async(req,res) =>
+// {
+
+// }
+
+// exports.inStock = async(req,res) => 
+// {
+
+// }
+
+// exports.lowStock = async(req,res) =>
+// {
+
+// }

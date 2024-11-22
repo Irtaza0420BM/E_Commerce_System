@@ -6,12 +6,17 @@ const {Invoice} = require('../models/invoices.js')
 const {createSchema, updateSchema, removeSchema} = require('../middlewares/validator.js');
 const { exist } = require('joi');
 
-//First Function will be used by Admin only, to create new entries.
+//First Function will be used by Admin only, to create new entries. Will Only Work for admin now.
 exports.createItem =  async(req, res) =>
 {
-    const {name, quantity, required_quantity, buying_price_per_unit, selling_price_per_unit} = req.body; //(Its not chatgpt its me trying to logs, this one will take three parameters from req.body)
+  if(req.user.role !== 'admin'){
+    return res.status(403).json({message: "You are not admin or there is an issue with your log-in, login again as admin."})
+  }
+     //(Its not chatgpt its me trying to logs, this one will take three parameters from req.body)
     try {
+      const {name, quantity, required_quantity, buying_price_per_unit, selling_price_per_unit} = req.body;
         const{error , value} = createSchema.validate({name, quantity, required_quantity, buying_price_per_unit, selling_price_per_unit})
+        console.log(req.body)
         if(error)
         {
             return res.status(400).json({message: error.details[0].message})
@@ -28,7 +33,7 @@ exports.createItem =  async(req, res) =>
         const result = await item.save();
         return res.status(200).json({sucess: true, message: "Item saves successful ", result: result})
     } catch (error) {
-      return res.status(500).json({success: false, message :"error connecting to server."})
+      return res.status(500).json({success: false, message: error.errmsg})
     }
 }
 // What I want my read to do? I want it to check If the user gave any name. if it did , then it will return the collection with the given name. If not, it will return entire collection
@@ -52,6 +57,7 @@ exports.read =  async(req, res) =>
 // Things I want front end to do: I want the front end to send the name of the item to the backend only when item name is 2 or more, also I want the front-end to have a speed checker Use debouncing on the frontend to limit the frequency of API calls when typing.
 //This is to serach for medicine name it should OnLy send medicine name.
 exports.searchItem = async (req, res) => {
+  console.log("I received a request")
   try {
     const { name } = req.body; // Name typed by the user
     const results = await Item.find(
