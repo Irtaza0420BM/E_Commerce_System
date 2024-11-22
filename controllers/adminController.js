@@ -1,5 +1,5 @@
 //Creating functions that I will use in admin.//
-const {Item} = require('../models/usermodels')
+const {Item} = require('../models/items')
 const Employee = require('../models/employees');
 const{ItemsHistory} = require('../models/itemsHistory')
 const {Invoice} = require ('../models/invoices')

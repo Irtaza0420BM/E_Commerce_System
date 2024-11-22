@@ -1,6 +1,6 @@
 // I want to create 3 functions One let the user Create his Collection (user) document, Other let the middle man (admin) create a collection, and the third one to let the user delete his collection
 // I will use the Mongoose library to interact with MongoDB
-const {Item} = require('../models/usermodels.js')
+const {Item} = require('../models/items.js')
 const ItemsHistory = require("../models/itemsHistory.js");
 const {Invoice} = require('../models/invoices.js')
 const {createSchema, updateSchema, removeSchema} = require('../middlewares/validator.js');
