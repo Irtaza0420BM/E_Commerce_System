@@ -1,4 +1,3 @@
-//Creating functions that I will use in admin.//
 const {Item} = require('../models/items')
 const Employee = require('../models/employees');
 const{ItemsHistory} = require('../models/itemsHistory')
@@ -12,13 +11,13 @@ exports.dashboard = async (req, res) => {
             Item.aggregate([
                 {
                     $facet: {
-                        totalQuantity: [{ $group: { _id: null, total: { $sum: "$quantity" } } }],
-                        inStock: [{ $match: { stock: "Available" } }, { $count: "count" }],
+                        totalQuantityItems: [{ $group: { _id: null, total: { $sum: "$quantity" } } }],
+                        totalitemsAvailable: [{ $match: { stock: "Available" } }, { $count: "TotalItemsAvailable" }],
                         totalProfit: [
                             {
                                 $group: {
                                     _id: null,
-                                    profit: {
+                                    potentialProfit: {
                                         $sum: {
                                             $multiply: [
                                                 { $subtract: ["$selling_price_per_unit", "$buying_price_per_unit"] },
@@ -43,15 +42,18 @@ exports.dashboard = async (req, res) => {
             ]),
             ItemsHistory.aggregate([
                 {
+                    $match: {
+                        "action": "Sale",
+                    },
                     $group: {
                         _id: null,
                         totalSales: { $sum: "$totalPrice" }, // Sum of total price
-                        totalSoldQuantity: { $sum: "$soldQuantity" }, // Sum of sold quantities
+                        totalSoldQuantity: { $sum: "$deltaQuantity" }, // Sum of sold quantities
                         totalProfit: {
                             $sum: {
-                                $subtract: [
+                                $add: [
                                     "$totalPrice",
-                                    { $multiply: ["$purchasePricePerUnit", "$soldQuantity"] },
+                                    { $multiply: ["$purchasePricePerUnit", "$deltaQuantity"] },
                                 ],
                             },
                         },

@@ -1,15 +1,48 @@
 const mongoose = require("mongoose");
 
-const itemsHistorySchema = new mongoose.Schema({
-  employee: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee', required: true },
-  item: { type: mongoose.Schema.Types.ObjectId, ref: 'Item', required: true },
-  deltaQuantity: { type: Number, required: true }, // Quantity bought or sold.
-  currentQuantity:{type: Number, required: true}, // basicaly the actual amount after the process is done. 
-  purchasePricePerUnit: { type: Number, required: true }, // Purchase price per unit
-  sellingPricePerUnit: { type: Number, required: true }, // Selling price per unit (before discount)
-  discountPercent: { type: Number, default: 0 }, // Discount applied
-  totalPrice: { type: Number, required: true }, // Total price after applying the discount
-  transactionDate: { type: Date, default: Date.now }, // Date of the transaction
+const itemsHistorySchema = new mongoose.Schema({ 
+  employee: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Employee', 
+    required: true 
+  },
+  action:{
+    type:String,
+    enum: ['Sale', 'Update' , 'Returned', 'Created']
+  },
+  item: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Item', 
+    required: true 
+  },
+  deltaQuantity: { 
+    type: Number, 
+    required: true 
+  }, // Quantity bought (positive) or sold (negative).
+  currentQuantity: { 
+    type: Number, 
+    required: true 
+  }, // Actual amount after the transaction.
+  purchasePricePerUnit: { 
+    type: Number, 
+    required: true 
+  }, // Purchase price per unit.
+  sellingPricePerUnit: { 
+    type: Number, 
+    required: true 
+  }, // Selling price per unit (before discount).
+  discountPercent: { 
+    type: Number, 
+    default: 0 
+  }, // Discount applied.
+  totalPrice: { 
+    type: Number, 
+    required: true 
+  }, // Total price after applying the discount.
+  transactionDate: { 
+    type: Date, 
+    default: Date.now 
+  }, // Date of the transaction.
 });
 
 const ItemsHistory = mongoose.model("ItemsHistory", itemsHistorySchema);

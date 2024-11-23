@@ -1,22 +1,20 @@
-// I want to create 3 functions One let the user Create his Collection (user) document, Other let the middle man (admin) create a collection, and the third one to let the user delete his collection
-// I will use the Mongoose library to interact with MongoDB
 const {Item} = require('../models/items.js')
-const ItemsHistory = require("../models/itemsHistory.js");
+const {ItemsHistory} = require("../models/itemsHistory.js");
 const {Invoice} = require('../models/invoices.js')
+const {Employee} = require("../models/employees.js")
+const mongoose = require('mongoose');
 const {createSchema, updateSchema, removeSchema} = require('../middlewares/validator.js');
 const { exist } = require('joi');
 
-//First Function will be used by Admin only, to create new entries. Will Only Work for admin now.
+//admin
 exports.createItem =  async(req, res) =>
 {
-  if(req.user.role !== 'admin'){
-    return res.status(403).json({message: "You are not admin or there is an issue with your log-in, login again as admin."})
-  }
-     //(Its not chatgpt its me trying to logs, this one will take three parameters from req.body)
+  const userId = await Employee.findOne({ _id: "673f2b8f8d76aa030fa4ed41"}); //I want to do Admin. Ok so I will do admin now. 
+  // console.log(userId)
     try {
+      
       const {name, quantity, required_quantity, buying_price_per_unit, selling_price_per_unit} = req.body;
-        const{error , value} = createSchema.validate({name, quantity, required_quantity, buying_price_per_unit, selling_price_per_unit})
-        console.log(req.body)
+      const{error , value} = createSchema.validate({name, quantity, required_quantity, buying_price_per_unit, selling_price_per_unit})
         if(error)
         {
             return res.status(400).json({message: error.details[0].message})
@@ -31,12 +29,34 @@ exports.createItem =  async(req, res) =>
         }
         const item= new Item({name, quantity, required_quantity, buying_price_per_unit, selling_price_per_unit});
         const result = await item.save();
+        
+        const itemHistory = await ItemsHistory.create({
+          employee: userId._id,
+          action: 'Created',
+          item: result._id,
+          deltaQuantity: quantity,
+          currentQuantity: quantity,
+          purchasePricePerUnit: buying_price_per_unit,
+          sellingPricePerUnit: selling_price_per_unit,
+          totalPrice: buying_price_per_unit*quantity,
+        })
+
         return res.status(200).json({sucess: true, message: "Item saves successful ", result: result})
     } catch (error) {
       return res.status(500).json({success: false, message: error.errmsg})
     }
 }
-// What I want my read to do? I want it to check If the user gave any name. if it did , then it will return the collection with the given name. If not, it will return entire collection
+//admin
+router.get('/items', async (req, res) => {
+  try {
+      const items = await Item.find();
+      res.status(200).json({ success: true, items });
+  } catch (error) {
+      console.error('Error fetching items:', error);
+      res.status(500).json({ success: false, message: 'Error fetching items', error });
+  }
+});
+
 exports.read =  async(req, res) =>
 {
     const {name} = req.body;
@@ -53,9 +73,7 @@ exports.read =  async(req, res) =>
     }
 
 }
-// I am creating this function to searchForItem in the dataBase it will be called again and again.
-// Things I want front end to do: I want the front end to send the name of the item to the backend only when item name is 2 or more, also I want the front-end to have a speed checker Use debouncing on the frontend to limit the frequency of API calls when typing.
-//This is to serach for medicine name it should OnLy send medicine name.
+
 exports.searchItem = async (req, res) => {
   console.log("I received a request")
   try {
@@ -70,14 +88,13 @@ exports.searchItem = async (req, res) => {
   }
 };
 
-//This one is tested it works. No problem at all. 
 exports.fetchItem = async (req, res) => {
   try {
     const {name} = req.body
     //const { name } = req.params; // Name of the item clicked
     const item = await Item.findOne(
-      { name: { $regex: `^${name}$`, $options: 'i' } }, // Exact match, case-insensitive
-      'name selling_price_per_unit quantity' // Select desired fields
+      { name: { $regex: `^${name}$`, $options: 'i' } }, 
+      'name selling_price_per_unit quantity'
     );
     if (!item) {
       return res.status(404).json({ message: 'Item not found' });
@@ -88,11 +105,8 @@ exports.fetchItem = async (req, res) => {
   }
 };
 
-// items is an array of objects [{}, {}, {}]
-//Making sure Our Stocks changes based on quantity.
 exports.generatereceipts = async (req, res) => {
-  const { createdBy, customername, items, total, percentdiscount = 0 } = req.body;
-
+  const { createdBy, customername, items, total, percentdiscount = 0 } = req.body
   if (!createdBy || !customername || !items || !Array.isArray(items) || items.length === 0 || !total) {
     return res.status(400).json({
       success: false,
@@ -136,6 +150,7 @@ exports.generatereceipts = async (req, res) => {
         });
       }
 
+      // Update the stock without using transactions
       await Item.updateOne(
         { _id: dbItem._id },
         { $inc: { quantity: -quantity } }
@@ -148,8 +163,11 @@ exports.generatereceipts = async (req, res) => {
 
       // Prepare history record for this item
       historyRecords.push({
-        itemName: name,
-        soldQuantity: quantity,
+        employee: createdBy, // Assuming 'createdBy' is an employee reference
+        item: dbItem._id, // Store the reference to the item
+        action: 'Sale',
+        deltaQuantity: -quantity, // Quantity sold
+        currentQuantity: dbItem.quantity - quantity, // Updated quantity
         purchasePricePerUnit: dbItem.buying_price_per_unit,
         sellingPricePerUnit: dbItem.selling_price_per_unit,
         discountPercent: percentdiscount,
@@ -157,24 +175,25 @@ exports.generatereceipts = async (req, res) => {
       });
     }
 
+    // Check if calculated total matches the provided total
     if (calculatedTotal !== total) {
       return res.status(400).json({
         success: false,
         message: `Total price mismatch. Expected: ${calculatedTotal}, Received: ${total}`,
       });
     }
-
-    // Create Invoice
     const invoice = await Invoice.create({
       createdBy,
       customername,
       items,
+      percentdiscount, // Store only the ObjectIds
       total: calculatedTotal,
     });
 
-    // Log history records
-    await ItemsHistory.insertMany(historyRecords);
+    // Insert the history records first to get their ObjectIds
+    const savedHistoryRecords = await ItemsHistory.insertMany(historyRecords);
 
+    
     return res.status(201).json({
       success: true,
       message: "Invoice generated successfully.",
@@ -188,6 +207,7 @@ exports.generatereceipts = async (req, res) => {
     });
   }
 };
+
 
 exports.updateItem = async (req, res) => {
   const {userId} = req.user;

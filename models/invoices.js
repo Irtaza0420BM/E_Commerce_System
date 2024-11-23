@@ -1,7 +1,10 @@
 const mongoose = require('mongoose');
 
 const invoiceSchema = new mongoose.Schema({
-    createdBy: { type: String, required: true },
+    createdBy: {type: mongoose.Schema.Types.ObjectId, 
+        ref: 'Employee', 
+        required: true   
+    },
     customername: { type: String, required: true },
     createdAt: { type: Date, default: Date.now },
     items: [
@@ -11,6 +14,7 @@ const invoiceSchema = new mongoose.Schema({
             price: { type: Number, required: true }, // Selling price per unit
         },
     ],
+    percentdiscount: {type: Number, default :0},
     total: { type: Number, required: true },
     versions: [
         {
@@ -35,3 +39,5 @@ invoiceSchema.index({ customername: 1 });
 
 const Invoice = mongoose.model('Invoice', invoiceSchema);
 module.exports = {Invoice};
+
+

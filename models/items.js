@@ -1,8 +1,6 @@
 
 const mongoose = require('mongoose');
-mongoose.connect('mongodb://localhost:27017/items')
-.then(() => {console.log('Connected to MongoDB')})
-.catch(err => {console.error('Error connecting to MongoDB:', err)});
+
 
 //I need items name, Items Quatity inserted by Admin, and required quantity for each item, How much we bought it for How much we selling it for
 
@@ -17,22 +15,22 @@ const itemSchema = new mongoose.Schema({
     type: Number,
     required: [true, 'Quantity is required.'],
   },
-  required_quantity:{
+  required_quantity: {
     type: Number,
     required: true,
   },
   stock: {
     type: String,
-    default: 'Available'
+    default: 'Available',
   },
   buying_price_per_unit: { 
     type: Number,
-    required: true 
+    required: true,
   },
-  selling_price_per_unit:{
+  selling_price_per_unit: {
     type: Number,
-    required: true
-  }
+    required: true,
+  },
 });
 
 itemSchema.index({ name: "text" });

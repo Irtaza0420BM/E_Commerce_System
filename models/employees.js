@@ -1,13 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
-//userSchema? Question is What are the credentials for employee and admin login name, password, phone, address, cnic
 
-mongoose.connect('mongodb://localhost:27017/items')
-.then(() => {console.log('Connected to MongoDB')})
-.catch(err => {console.error('Error connecting to MongoDB:', err)});
-
-
-const UserSchema = new mongoose.Schema({
+const employee = new mongoose.Schema({
     name: { type: String, required: true },
     password: { type: String, required: true },
     username: {type: String, required: true, unique: true},
@@ -25,8 +19,9 @@ const UserSchema = new mongoose.Schema({
     verified: {type: Boolean, default: false},
 });
 
-UserSchema.index ({username : 1})
-UserSchema.index ({email: 1})
-//Why I used 1 here and note "text" is bcuz I want to do sorting, and search by exact user name not like medicine where I might forget some phrase.
+employee.index ({username : 1})
+employee.index ({email: 1})
 
-module.exports = mongoose.model('Employee', UserSchema);
+const Employee = mongoose.model('Employee', employee);
+
+module.exports= {Employee}

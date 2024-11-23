@@ -5,6 +5,7 @@ const router = express.Router()
 router.post('/signup' , authController.register)  //All debugged, checked, tested, Done.
 router.post('/login' , authController.signin) //All debugged, checked, tested, Done.
 router.post('/signout',  authController.signout) //This is working, checked, tested, debugged, Done.
+
 // router.patch('/changepassword', authController.changePassword)
 
 
