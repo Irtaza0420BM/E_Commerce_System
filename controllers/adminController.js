@@ -1,9 +1,26 @@
 const {Item} = require('../models/items')
-const Employee = require('../models/employees');
+const {Employee} = require('../models/employees');
 const{ItemsHistory} = require('../models/itemsHistory')
 const {Invoice} = require ('../models/invoices')
 
 
+exports.readAllEmmployees =  async(req, res) =>
+    {
+        const {name} = req.body;
+        if (name ?? false) {
+            existing_item = await Item.findOne({ name });
+        } else {
+            existing_item = await Item.find();
+        }
+    
+        if (!existing_item || (Array.isArray(existing_item) && existing_item.length === 0)) {
+            res.status(400).json({success: false, message: "Item doesn't exist."})
+        } else {
+            res.status(200).json({success: true, message: existing_item })
+        }
+    
+    }
+  
 exports.dashboard = async (req, res) => {
     try {
         const [dashboardMetrics, lowStockItems, salesMetrics] = await Promise.all([
@@ -85,7 +102,6 @@ exports.dashboard = async (req, res) => {
 exports.unverifiedemployees = async(req, res) => {
     try {
         const unverified = await Employee.find({verified: false})
-
         res.status(200).json({unverified})
     } catch (error) {
         res.status(400).json({message: error})
@@ -105,7 +121,8 @@ exports.verifyEmployee = async(req, res) => {
        result= await toVerifyEmployee.save();
     
         res.status(200).json({ success: true, message: "Employee has been verified." , result });
-    } catch (error) {
+    } 
+    catch (error) {
         console.error(error);
         res.status(500).json({ success: false, message: "An error occurred while verifying the employee." });
     }
@@ -114,39 +131,5 @@ exports.verifyEmployee = async(req, res) => {
 
 
 // exports.areemployeesLogin = async (req,res) => {
-//     // This is my function to check how many employees are logged in, Or when did an employee logged in, logged out. etc.
-// }
-
-
-
-
-// exports.vendorManagement = async(req, res) =>
-// {
-
-// }
-
-// exports.customerManagement = async(req,res) => 
-// {
-
-// }
-
-
-// exports.totalStocks = async(req,res) => 
-// {
-
-// }
-
-// exports.totalQuantity = async(req,res) =>
-// {
-
-// }
-
-// exports.inStock = async(req,res) => 
-// {
-
-// }
-
-// exports.lowStock = async(req,res) =>
-// {
-
+//  This is my function to check how many employees are logged in, Or when did an employee logged in, logged out. etc.
 // }

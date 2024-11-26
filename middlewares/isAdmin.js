@@ -1,4 +1,4 @@
-exports.isAdmin = async (res, res, next) =>
+exports.isAdmin = async (req, res, next) =>
 {
 
     if (req.user.role !== "admin") {

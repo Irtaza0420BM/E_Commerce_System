@@ -1,14 +1,19 @@
 const express = require("express")
-const { generatereceipts, createItem } = require("../controllers/inventroyController")
+const { generatereceipts, createItem, updateItem, updateReceipt, read, searchItem, fetchItem, searchCustomer, fetchCustomer } = require("../controllers/inventroyController")
+const { identifier } = require("../middlewares/authenticate")
+const { isAdmin } = require("../middlewares/isAdmin")
  
 const router = express.Router()
 
-router.post('/createitem', createItem)
-router.post('/invoice', generatereceipts)
-
-
-
-
+router.post('/createitem', identifier, isAdmin,  createItem)
+router.patch('/updateitem', identifier, updateItem )
+router.get('/read', identifier, isAdmin, read)
+router.get('/searchitem', identifier, searchItem)
+router.post('/fetchitem', identifier, fetchItem )
+router.post('/invoice', identifier, generatereceipts)
+router.patch('/updatereceipt', identifier, updateReceipt)
+router.post('/searchcustomer', identifier, searchCustomer)
+router.post('/fetchcustomer', identifier, fetchCustomer)
 
 module.exports=router
 

@@ -1,11 +1,9 @@
-const Employee = require('../models/employees');
+const {Employee} = require('../models/employees');
 const jwt = require('jsonwebtoken');
 const {doHash, doHashValidation} = require('../utils/hashing')
 const {employeeSchema , signinSchema} = require('../middlewares/validator')
 
-// This is my register role. admin will have to specify that he is admin. We can add gender?, if company wants to keep track of that. I should name it createEmployee.
 exports.register = async (req, res) => {
-     //Issue1: name can be same, how to handle this? We can use phone for login?
      const  {name, username, password, phone, email, address, cnic} = req.body;
     try{
         const {error}= employeeSchema.validate({name, password, username, phone, email, address, cnic}) //I need to insert Uservalidation. 
