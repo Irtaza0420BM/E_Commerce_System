@@ -8,18 +8,18 @@ const {createSchema, updateSchema, removeSchema} = require('../middlewares/valid
 
 exports.createItem =  async(req, res) =>
 {
-  const userId = await Employee.findOne({ _id: "673f2b8f8d76aa030fa4ed41"}); //I want to do Admin. Ok so I will do admin now. 
+  const userId = user.req.userId
   // console.log(userId)
     try {
       
       const {name, quantity, required_quantity, buying_price_per_unit, selling_price_per_unit} = req.body;
-      const{error , value} = createSchema.validate({name, quantity, required_quantity, buying_price_per_unit, selling_price_per_unit})
+      const{error} = createSchema.validate({name, quantity, required_quantity, buying_price_per_unit, selling_price_per_unit})
         if(error)
         {
             return res.status(400).json({message: error.details[0].message})
         }
         
-        let stock = "In stock";
+        let stock = "Available";
         if (quantity==0) {
             stock = "empty";
         } 
@@ -29,7 +29,7 @@ exports.createItem =  async(req, res) =>
         const item= new Item({name, quantity, stock, required_quantity, buying_price_per_unit, selling_price_per_unit});
         const result = await item.save();
         
-        const itemHistory = await ItemsHistory.create({
+        await ItemsHistory.create({
           employee: userId._id,
           action: 'Created',
           item: result._id,
@@ -40,7 +40,7 @@ exports.createItem =  async(req, res) =>
           totalPrice: buying_price_per_unit*quantity,
         })
 
-        return res.status(200).json({sucess: true, message: "Item saves successful ", result: result})
+      return res.status(200).json({sucess: true, message: "Item saves successful ", result: result})
     } catch (error) {
       return res.status(500).json({success: false, message: error.errmsg})
     }
@@ -89,7 +89,6 @@ exports.searchItem = async (req, res) => {
 exports.fetchItem = async (req, res) => {
   try {
     const {name} = req.body
-    //const { name } = req.params; // Name of the item clicked
     const item = await Item.findOne(
       { name: { $regex: `^${name}$`, $options: 'i' } }, 
       'name selling_price_per_unit quantity'
@@ -107,8 +106,9 @@ exports.fetchItem = async (req, res) => {
 // another collection will be created named ItemHistory, it tracks all the history for admin. So he can look at inner working of things
 // Invoice can be changed, but ItemHistory will be immutable. So it will be like a log of all the transactions. 
 exports.generatereceipts = async (req, res) => {
-  const userId = await Employee.findOne({ _id: "673f2b8f8d76aa030fa4ed41"}); //I want to do Admin. Ok so I will do admin now. 
-  const {  customername, items, total, percentdiscount = 0 } = req.body
+  const userId = req.user.userId //I want to do Admin. Ok so I will do admin now. 
+  console.log(userId)
+  const {  customername, items, total} = req.body
   if (!customername || !items || !Array.isArray(items) || items.length === 0 || !total) {
     return res.status(400).json({
       success: false,
@@ -121,7 +121,7 @@ exports.generatereceipts = async (req, res) => {
     const historyRecords = [];
 
     for (let item of items) {
-      const { name, quantity, price } = item;
+      const { name, quantity, price, percentdiscount=0 } = item;
       if (!name || !quantity || quantity <= 0 || !price) {
         return res.status(400).json({
           success: false,
@@ -144,15 +144,17 @@ exports.generatereceipts = async (req, res) => {
         });
       }
        
-      let stock = "In stock";
+      let newstock = "Available";
       if (dbItem.quantity - quantity === 0) {
-          stock = "empty";
+          newstock = "empty";
       } 
       else if(dbItem.quantity - quantity < dbItem.required_quantity ) {
-          stock = "Low stock needs shelving"
+          newstock = "checking";
       }
 
-      const expectedTotalPrice = dbItem.selling_price_per_unit * quantity;
+      const discount = (percentdiscount / 100) * price;
+      const expectedTotalPrice = price - discount;
+
       if (expectedTotalPrice !== price) {
         return res.status(400).json({
           success: false,
@@ -162,17 +164,16 @@ exports.generatereceipts = async (req, res) => {
 
       await Item.updateOne(
         { _id: dbItem._id },
-        { $inc: { quantity: -quantity } },
-        { $set: { stock: stock} }
+        { $inc: { quantity: -quantity } ,
+         $set: { stock: newstock } }
       );
 
-      const discount = (percentdiscount / 100) * expectedTotalPrice;
-      const discountedPrice = expectedTotalPrice - discount;
+      
 
-      calculatedTotal += discountedPrice;
+      calculatedTotal += expectedTotalPrice;
 
       historyRecords.push({
-        employee: userId._id, // Assuming 'createdBy' is an employee reference
+        employee: userId, // Assuming 'createdBy' is an employee reference
         item: dbItem._id, // Store the reference to the item
         action: 'Sale',
         deltaQuantity: -quantity, // Quantity sold
@@ -180,7 +181,7 @@ exports.generatereceipts = async (req, res) => {
         purchasePricePerUnit: dbItem.buying_price_per_unit,
         sellingPricePerUnit: dbItem.selling_price_per_unit,
         discountPercent: percentdiscount,
-        totalPrice: discountedPrice,
+        totalPrice: expectedTotalPrice,
       });
     }
 
@@ -190,15 +191,15 @@ exports.generatereceipts = async (req, res) => {
         message: `Total price mismatch. Expected: ${calculatedTotal}, Received: ${total}`,
       });
     }
+    console.log(userId._id)
     const invoice = await Invoice.create({
-      createdBy: userId._id,
+      createdBy: userId,
       customername,
       items,
-      percentdiscount, 
+      percentdiscount: items[0].percentdiscount, 
       total: calculatedTotal,
     });
-
-    const savedHistoryRecords = await ItemsHistory.insertMany(historyRecords);
+    await ItemsHistory.insertMany(historyRecords);
 
     
     return res.status(201).json({
@@ -217,7 +218,7 @@ exports.generatereceipts = async (req, res) => {
 
 //Since its Update Route it is best practice to make it a patch route.
 exports.updateItem = async (req, res) => {
-  const userId = await Employee.findOne({ _id: "673f2b8f8d76aa030fa4ed41" });
+  const userId = req.user.userId
   const { updateData } = req.body;
 
   if (!updateData || !Array.isArray(updateData) || updateData.length === 0) {
@@ -270,7 +271,7 @@ exports.updateItem = async (req, res) => {
 
     // Step 2: Perform updates
     for (const { dbItem, quantity, buying_price_per_unit, sellingPricePerUnit } of itemsToUpdate) {
-      let stock = "In stock";
+      let stock = "Available";
       if (dbItem.quantity + quantity < dbItem.required_quantity) {
         stock = "Low stock needs shelving";
       }
@@ -340,9 +341,8 @@ exports.fetchCustomer = async (req, res) => {
   }
 };
 exports.updateReceipt = async (req, res) => {
-  console.time("Runtime");
-
-  const { oldinvoice_id, createdBy, customername, items, total } = req.body;
+  const createdBy = req.user.userId
+  const { oldinvoice_id, customername, items, total } = req.body;
 
   if (!oldinvoice_id || !createdBy || !customername || !items || !Array.isArray(items) || items.length === 0 || !total) {
     return res.status(400).json({
@@ -421,7 +421,7 @@ exports.updateReceipt = async (req, res) => {
         throw new Error(`Insufficient stock for item: ${name}`);
       }
 
-      let stock = "In stock";
+      let stock = "Available";
       if (dbItem.quantity - quantity === 0) {
         stock = "empty";
       } else if (dbItem.quantity - quantity < dbItem.required_quantity) {

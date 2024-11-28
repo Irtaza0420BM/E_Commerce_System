@@ -4,7 +4,6 @@ const helmet = require("helmet")
 const mongoose = require("mongoose")
 const cors = require("cors")
 const cookieParser = require("cookie-parser")
-// const collection =require ("./models/userModel")
 const authRouter = require("./routes/authRoutes")
 const adminRouter = require("./routes/adminRoutes")
 const inventoryRouter = require("./routes/inventoryRoutes")
@@ -17,9 +16,11 @@ app.use(cookieParser())
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
-mongoose.connect('mongodb://localhost:27017/items')
-.then(() => {console.log('Connected to MongoDB')})
-.catch(err => {console.error('Error connecting to MongoDB:', err)});
+const mongoURI = process.env.MONGO_URI
+
+mongoose.connect(mongoURI)
+  .then(() => console.log("Connected to MongoDB Atlas"))
+  .catch((err) => console.error("Error connecting to MongoDB Atlas:", err));
 
 app.use('/api/auth', authRouter)
 app.use('/api/admin', adminRouter)
