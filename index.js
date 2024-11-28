@@ -29,7 +29,9 @@ app.use('/api/inventory', inventoryRouter)
 app.get('/' , (req,res) => {
     res.json({message:"Bie from the server."})
 })
-
+app.get('/checking' , (req,res) => {
+    res.json({message:"I am deployed"})
+})
 
 app.listen(process.env.PORT, ()=> {
     console.log(`Server is running on ${process.env.PORT}`)
