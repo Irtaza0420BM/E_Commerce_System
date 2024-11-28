@@ -19,7 +19,7 @@ app.use(express.urlencoded({ extended: true }))
 const mongoURI = process.env.MONGO_URI
 
 mongoose.connect(mongoURI)
-  .then(() => console.log("Connected to MongoDB Atlas"))
+    .then(() => console.log("Connected to MongoDB Atlas"))
   .catch((err) => console.error("Error connecting to MongoDB Atlas:", err));
 
 app.use('/api/auth', authRouter)
