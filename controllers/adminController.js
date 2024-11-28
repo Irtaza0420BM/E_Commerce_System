@@ -3,7 +3,41 @@ const {Employee} = require('../models/employees');
 const{ItemsHistory} = require('../models/itemsHistory')
 const {Invoice} = require ('../models/invoices')
 
+const mongoose = require("mongoose");
 
+exports.dashboard = async (req, res) => {
+    try {
+      const [dashboardMetrics, lowStockItems, salesMetrics] = await Promise.all([
+        getItemMetrics(),
+        Item.aggregate([
+          {
+            $match: {
+              $expr: { $lt: ["$quantity", "$required_quantity"] },
+            },
+          },
+          { $project: { name: 1, quantity: 1, required_quantity: 1, _id: 0 } },
+        ]),
+       result = getSalesMetrics(),
+      ]);
+      const totalSales = salesMetrics[0]?.totalSales || 0;
+      const totalSoldQuantity = salesMetrics[0]?.totalSoldQuantity || 0;
+      const totalProfitFromHistory = salesMetrics[0]?.totalProfit || 0;
+      console.log("      checking         ",result[0].items ,result[0].itemDetails )
+      res.status(200).json({
+        totalSales,
+        totalSoldQuantity,
+        totalProfit: totalProfitFromHistory,
+        totalStocks: dashboardMetrics[0].totalStocks[0]?.count || 0,
+        totalQuantity: dashboardMetrics[0].totalQuantity[0]?.total || 0,
+        inStock: dashboardMetrics[0].inStock[0]?.count || 0,
+        lowStockItems,
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  };
+  
 exports.readAllEmmployees =  async(req, res) =>
     {
         const {name} = req.body;
@@ -21,83 +55,83 @@ exports.readAllEmmployees =  async(req, res) =>
     
     }
   
-exports.dashboard = async (req, res) => {
-    try {
-        const [dashboardMetrics, lowStockItems, salesMetrics] = await Promise.all([
-            // Aggregation for item-related metrics
-            Item.aggregate([
-                {
-                    $facet: {
-                        totalQuantityItems: [{ $group: { _id: null, total: { $sum: "$quantity" } } }],
-                        totalitemsAvailable: [{ $match: { stock: "Available" } }, { $count: "TotalItemsAvailable" }],
-                        totalProfit: [
-                            {
-                                $group: {
-                                    _id: null,
-                                    potentialProfit: {
-                                        $sum: {
-                                            $multiply: [
-                                                { $subtract: ["$selling_price_per_unit", "$buying_price_per_unit"] },
-                                                "$quantity",
-                                            ],
-                                        },
-                                    },
-                                },
-                            },
-                        ],
-                        totalStocks: [{ $count: "count" }],
-                    },
-                },
-            ]),
-            Item.aggregate([
-                {
-                    $match: {
-                        $expr: { $lt: ["$quantity", "$required_quantity"] }, // Filter for low stock
-                    },
-                },
-                { $project: { name: 1, quantity: 1, required_quantity: 1, _id: 0 } },
-            ]),
-            ItemsHistory.aggregate([
-                {
-                    $match: {
-                        "action": "Sale",
-                    },
-                    $group: {
-                        _id: null,
-                        totalSales: { $sum: "$totalPrice" }, // Sum of total price
-                        totalSoldQuantity: { $sum: "$deltaQuantity" }, // Sum of sold quantities
-                        totalProfit: {
-                            $sum: {
-                                $add: [
-                                    "$totalPrice",
-                                    { $multiply: ["$purchasePricePerUnit", "$deltaQuantity"] },
-                                ],
-                            },
-                        },
-                    },
-                },
-            ]),
-        ]);
+// exports.dashboard = async (req, res) => {
+//     try {
+//         const [dashboardMetrics, lowStockItems, salesMetrics] = await Promise.all([
+//             // Aggregation for item-related metrics
+//             Item.aggregate([
+//                 {
+//                     $facet: {
+//                         totalQuantityItems: [{ $group: { _id: null, total: { $sum: "$quantity" } } }],
+//                         totalitemsAvailable: [{ $match: { stock: "Available" } }, { $count: "TotalItemsAvailable" }],
+//                         totalProfit: [
+//                             {
+//                                 $group: {
+//                                     _id: null,
+//                                     potentialProfit: {
+//                                         $sum: {
+//                                             $multiply: [
+//                                                 { $subtract: ["$selling_price_per_unit", "$buying_price_per_unit"] },
+//                                                 "$quantity",
+//                                             ],
+//                                         },
+//                                     },
+//                                 },
+//                             },
+//                         ],
+//                         totalStocks: [{ $count: "count" }],
+//                     },
+//                 },
+//             ]),
+//             Item.aggregate([
+//                 {
+//                     $match: {
+//                         $expr: { $lt: ["$quantity", "$required_quantity"] }, // Filter for low stock
+//                     },
+//                 },
+//                 { $project: { name: 1, quantity: 1, required_quantity: 1, _id: 0 } },
+//             ]),
+//             ItemsHistory.aggregate([
+//                 {
+//                     $match: {
+//                         "action": "Sale",
+//                     },
+//                     $group: {
+//                         _id: null,
+//                         totalSales: { $sum: "$totalPrice" }, // Sum of total price
+//                         totalSoldQuantity: { $sum: "$deltaQuantity" }, // Sum of sold quantities
+//                         totalProfit: {
+//                             $sum: {
+//                                 $add: [
+//                                     "$totalPrice",
+//                                     { $multiply: ["$purchasePricePerUnit", "$deltaQuantity"] },
+//                                 ],
+//                             },
+//                         },
+//                     },
+//                 },
+//             ]),
+//         ]);
 
-        // Extract metrics
-        const totalSales = salesMetrics[0]?.totalSales || 0;
-        const totalSoldQuantity = salesMetrics[0]?.totalSoldQuantity || 0;
-        const totalProfitFromHistory = salesMetrics[0]?.totalProfit || 0;
+//         // Extract metrics
+//         const totalSales = salesMetrics[0]?.totalSales || 0;
+//         const totalSoldQuantity = salesMetrics[0]?.totalSoldQuantity || 0;
+//         const totalProfitFromHistory = salesMetrics[0]?.totalProfit || 0;
 
-        res.status(200).json({
-            totalSales,
-            totalSoldQuantity,
-            totalProfit: totalProfitFromHistory, // Prefer profit from itemsHistory if available
-            totalStocks: dashboardMetrics[0].totalStocks[0]?.count || 0,
-            totalQuantity: dashboardMetrics[0].totalQuantity[0]?.total || 0,
-            inStock: dashboardMetrics[0].inStock[0]?.count || 0,
-            lowStockItems,
-        });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "Internal Server Error" });
-    }
-};
+//         res.status(200).json({
+//             totalSales,
+//             totalSoldQuantity,
+//             totalProfit: totalProfitFromHistory, // Prefer profit from itemsHistory if available
+//             totalStocks: dashboardMetrics[0].totalStocks[0]?.count || 0,
+//             totalQuantity: dashboardMetrics[0].totalQuantity[0]?.total || 0,
+//             inStock: dashboardMetrics[0].inStock[0]?.count || 0,
+//             lowStockItems,
+//         });
+//     } catch (err) {
+//         console.error(err);
+//         res.status(500).json({ error: "Internal Server Error" });
+//     }
+// };
 
 exports.unverifiedemployees = async(req, res) => {
     try {
@@ -129,7 +163,80 @@ exports.verifyEmployee = async(req, res) => {
     
 }
 
+async function getItemMetrics() {
+    return Item.aggregate([
+      {
+        $facet: {
+          totalQuantityItems: [{ $group: { _id: null, total: { $sum: "$quantity" } } }],
+          ItemsHighinStock: [{ $match: { stock: "Available" } }, { $count: "TotalItemsAvailable" }],
+          ItemsLessinStock: [{ $match: {stock: "Available"}}, { $count: "TotalItemsAvaialable"}],
+          totalProfit: [
+            {
+              $group: {
+                _id: null,
+                potentialProfit: {
+                  $sum: {
+                    $multiply: [
+                      { $subtract: ["$selling_price_per_unit", "$buying_price_per_unit"] },
+                      "$quantity",
+                    ],
+                  },
+                },
+              },
+            },
+          ],
+          totalStocks: [{ $count: "count" }],
+        },
+      },
+    ]);
+  }
+async function getSalesMetrics() {
+    return Invoice.aggregate([
+        { $unwind:  "$items" }, 
+      
+        {
+          $lookup: {
+            from: "items", 
+            localField: "items.name", 
+            foreignField: "name", 
+            as: "result",
+          },
+        },
 
-// exports.areemployeesLogin = async (req,res) => {
-//  This is my function to check how many employees are logged in, Or when did an employee logged in, logged out. etc.
-// }
+        {
+            $addFields: { 
+              "Revenue": { 
+                $subtract: [
+                  "$total", 
+                  { 
+                    $multiply: [
+                      { $arrayElemAt: ["$result.buying_price_per_unit", 0] },
+                      "$items.quantity"
+                    ]
+                  }
+                ] 
+              }
+            }
+        },
+
+        {
+          $group: {
+            _id: null, // Group all documents together
+            totalSales: { $sum: "$total" }, // Sum the total sales from Invoice
+            totalSoldQuantity: { $sum: "$items.quantity" }, // Sum the quantity sold for all items
+            totalProfit: { $sum: "$Revenue" }, // Sum the profit for all items
+          },
+        },
+      
+        // Final Step: Output the final result
+        {
+          $project: {
+            totalSales: 1,
+            totalSoldQuantity: 1,
+            totalProfit: 1, // Check the final profit
+          },
+        },
+      ]);
+      
+  }
+  
