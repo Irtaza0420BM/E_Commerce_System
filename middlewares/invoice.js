@@ -1,16 +1,47 @@
 const HTMLToPDF = require('convert-html-to-pdf').default;
 
+exports.receiptpdf= async(creater ,invoice ) => {
+const currentDate = new Date(); 
+const deliveryDate = currentDate.toISOString().split("T")[0];
+const deliveryTime = currentDate.toTimeString().slice(0, 5);
+
+  const options = {
+    "name": creater,
+    "address1": "Efaida-Benazir Road, Okara.",
+    "address2" : "Efaida",
+    "customerName" : invoice.customername,
+    "logo" : "./middlewares/logo/download.jpg",
+    "orderId": invoice._id,
+    "delivery_date": deliveryDate,
+    "delivery_time": deliveryTime,
+    "items": invoice.items,
+    "percentdiscount" : invoice.percentdiscount,
+    "total" : invoice.total,
+   
+}
+return getInvoice(options)
+
+}
 function getDeliveryItemsHTML(items){
-    let data = ""
-    for(let item of items){
-        data += `
+    let data =  `
     <div class="table-row">
+        <div class=" table-cell w-6/12 text-left font-bold py-1 px-4">Item</div>
+        <div class=" table-cell w-[10%] text-center">Quantity</div>
+        <div class=" table-cell w-2/12 text-center">Price</div>
+        <div class=" table-cell w-2/12 text-center">Total</div>
+    </div>
+    `
+    for(let item of items){
+        data +=  `
+   <div class="table-row">
         <div class=" table-cell w-6/12 text-left font-bold py-1 px-4">${item.name}</div>
         <div class=" table-cell w-[10%] text-center">${item.qty}</div>
         <div class=" table-cell w-2/12 text-center">₹${item.rate}</div>
         <div class=" table-cell w-2/12 text-center">₹${item.amount}</div>
     </div>
     `
+    
+    
     }
     return data
 }
@@ -107,8 +138,10 @@ function getDeliveryHTML(options){
     </div>
 </body>
 </html>
-    `
+`
+    
 }
+
 
 async function getInvoice(options) {
     return new Promise(async (resolve,reject) => {

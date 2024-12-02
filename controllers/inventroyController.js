@@ -3,12 +3,15 @@ const {Item} = require('../models/items.js')
 const {ItemsHistory} = require("../models/itemsHistory.js");
 const {Invoice} = require('../models/invoices.js')
 const {Employee} = require("../models/employees.js")
-const {createSchema, updateSchema, removeSchema} = require('../middlewares/validator.js');
-
+const {createSchema} = require('../middlewares/validator.js');
+const { receiptpdf } = require('../middlewares/invoice.js');
+const fs = require('fs');
+const path = require('path');
 
 exports.createItem =  async(req, res) =>
 {
-  const userId = user.req.userId
+  // const userId = req.user.userId
+  const userId = "673f2b8f8d76aa030fa4ed41"
   // console.log(userId)
     try {
       
@@ -42,7 +45,7 @@ exports.createItem =  async(req, res) =>
 
       return res.status(200).json({sucess: true, message: "Item saves successful ", result: result})
     } catch (error) {
-      return res.status(500).json({success: false, message: error.errmsg})
+      return res.status(500).json({success: false, message: error})
     }
 }
 // router.get('/items', async (req, res) => {
@@ -73,7 +76,6 @@ exports.read =  async(req, res) =>
 }
 
 exports.searchItem = async (req, res) => {
-  console.log("I received a request")
   try {
     const { name } = req.body; // Name typed by the user
     const results = await Item.find(
@@ -106,13 +108,14 @@ exports.fetchItem = async (req, res) => {
 // another collection will be created named ItemHistory, it tracks all the history for admin. So he can look at inner working of things
 // Invoice can be changed, but ItemHistory will be immutable. So it will be like a log of all the transactions. 
 exports.generatereceipts = async (req, res) => {
-  const userId = req.user.userId //I want to do Admin. Ok so I will do admin now. 
-  console.log(userId)
-  const {  customername, items, total} = req.body
+  const userId = req.user.userId;
+  console.log(req.body); 
+  const { customername, items, total, percentdiscount = 0 } = req.body;
+  
   if (!customername || !items || !Array.isArray(items) || items.length === 0 || !total) {
     return res.status(400).json({
       success: false,
-      message: "Invalid input. Please provide all required fields.",
+      message: `${customername}, ${items}, ${total}`,
     });
   }
 
@@ -120,8 +123,9 @@ exports.generatereceipts = async (req, res) => {
     let calculatedTotal = 0;
     const historyRecords = [];
 
+    // Process each item
     for (let item of items) {
-      const { name, quantity, price, percentdiscount=0 } = item;
+      const { name, quantity, price } = item;
       if (!name || !quantity || quantity <= 0 || !price) {
         return res.status(400).json({
           success: false,
@@ -143,41 +147,37 @@ exports.generatereceipts = async (req, res) => {
           message: `Insufficient stock for item: ${name}`,
         });
       }
-       
+
       let newstock = "Available";
       if (dbItem.quantity - quantity === 0) {
-          newstock = "empty";
-      } 
-      else if(dbItem.quantity - quantity < dbItem.required_quantity ) {
-          newstock = "checking";
+        newstock = "empty";
+      } else if (dbItem.quantity - quantity < dbItem.required_quantity) {
+        newstock = "checking";
       }
 
-      const discount = (percentdiscount / 100) * price;
-      const expectedTotalPrice = price - discount;
+      const expectedTotalPrice = dbItem.quantity * dbItem.selling_price_per_unit;
 
-      if (expectedTotalPrice !== price) {
-        return res.status(400).json({
-          success: false,
-          message: `Price mismatch for item: ${name}. Expected: ${expectedTotalPrice}, Received: ${price}`,
-        });
-      }
+      // if (expectedTotalPrice !== price) {
+      //   return res.status(400).json({
+      //     success: false,
+      //     message: `Price mismatch for item: ${name}. Expected: ${expectedTotalPrice}, Received: ${price}`,
+      //   });
+      // }
 
+      // Update item stock and history records
       await Item.updateOne(
         { _id: dbItem._id },
-        { $inc: { quantity: -quantity } ,
-         $set: { stock: newstock } }
+        { $inc: { quantity: -quantity }, $set: { stock: newstock } }
       );
-
-      
 
       calculatedTotal += expectedTotalPrice;
 
       historyRecords.push({
-        employee: userId, // Assuming 'createdBy' is an employee reference
-        item: dbItem._id, // Store the reference to the item
+        employee: userId,
+        item: dbItem._id,
         action: 'Sale',
-        deltaQuantity: -quantity, // Quantity sold
-        currentQuantity: dbItem.quantity - quantity, // Updated quantity
+        deltaQuantity: -quantity,
+        currentQuantity: dbItem.quantity - quantity,
         purchasePricePerUnit: dbItem.buying_price_per_unit,
         sellingPricePerUnit: dbItem.selling_price_per_unit,
         discountPercent: percentdiscount,
@@ -185,28 +185,43 @@ exports.generatereceipts = async (req, res) => {
       });
     }
 
-    if (calculatedTotal !== total) {
-      return res.status(400).json({
-        success: false,
-        message: `Total price mismatch. Expected: ${calculatedTotal}, Received: ${total}`,
-      });
-    }
-    console.log(userId._id)
+    // const discount = (percentdiscount / 100) * price;
+    // calculatedTotal = calculatedTotal - discount;
+
+    // if (calculatedTotal !== total) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: `Total price mismatch. Expected: ${calculatedTotal}, Received: ${total}`,
+    //   });
+    // }
+
+    // Create invoice
     const invoice = await Invoice.create({
       createdBy: userId,
       customername,
       items,
-      percentdiscount: items[0].percentdiscount, 
+      percentdiscount: items[0].percentdiscount,
       total: calculatedTotal,
     });
+    
     await ItemsHistory.insertMany(historyRecords);
 
-    
-    return res.status(201).json({
-      success: true,
-      message: "Invoice generated successfully.",
-      invoice,
-    });
+    // Generate PDF asynchronously
+    const name = await Employee.findOne({ _id: userId });
+    const pdfBuffer = await receiptpdf(name.name, invoice);  // Wait for the PDF buffer
+
+    // Save the PDF locally
+    const filePath = path.join(__dirname, 'generated_pdfs', `invoice_${invoice._id}.pdf`);
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, pdfBuffer);  // Write the PDF buffer to file
+
+    console.log(`PDF saved successfully at ${filePath}`);
+
+    // Send the PDF in response
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", "inline; filename=generated.pdf");
+    res.send(pdf); // You can also send the file to the client if needed
+
   } catch (error) {
     console.error(error);
     return res.status(500).json({

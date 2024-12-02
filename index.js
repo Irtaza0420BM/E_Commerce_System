@@ -6,10 +6,17 @@ const cors = require("cors")
 const cookieParser = require("cookie-parser")
 const authRouter = require("./routes/authRoutes")
 const adminRouter = require("./routes/adminRoutes")
-const inventoryRouter = require("./routes/inventoryRoutes")
-
+const inventoryRouter = require("./routes/inventoryRoutes");
+const profileRouter = require("./routes/profileRoutes")
 const app = express()
-app.use(cors()) 
+const corsOptions = {
+    origin: ['http://localhost:5173',
+        "https://management-system-dun.vercel.app"], // Replace with your frontend's origin
+    credentials: true, // Allow credentials (cookies, authorization headers, etc.)
+};
+
+app.use(cors(corsOptions));
+
 
 app.use(helmet())
 app.use(cookieParser())
@@ -25,6 +32,16 @@ mongoose.connect(mongoURI)
 app.use('/api/auth', authRouter)
 app.use('/api/admin', adminRouter)
 app.use('/api/inventory', inventoryRouter)
+app.use('/api/profile', profileRouter)
+
+app.get('/checking' , (req,res) => {
+    res.json({message:"I am deployed"})
+})
+
+
+app.get('/' , (req,res) => {      
+    res.json({message:"Bie from the server."})
+})
 
 app.get('/' , (req,res) => {
     res.json({message:"Bie from the server."})

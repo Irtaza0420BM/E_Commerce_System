@@ -5,10 +5,10 @@ const { isAdmin } = require("../middlewares/isAdmin")
  
 const router = express.Router()
 
-router.post('/createitem', identifier, isAdmin,  createItem)
+router.post('/createitem',  createItem)
 router.patch('/updateitem', identifier, updateItem )
 router.get('/read', identifier, isAdmin, read)
-router.get('/searchitem', identifier, searchItem)
+router.post('/searchitem', identifier, searchItem)
 router.post('/fetchitem', identifier, fetchItem )
 router.post('/invoice', identifier, generatereceipts)
 router.patch('/updatereceipt', identifier, updateReceipt)

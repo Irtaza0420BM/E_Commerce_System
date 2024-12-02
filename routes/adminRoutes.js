@@ -7,5 +7,4 @@ router.get('/dashboard', adminController.dashboard)
 router.get('/employees' , adminController.unverifiedemployees)
 router.post('/verify', adminController.verifyEmployee)
 
-
 module.exports = router
