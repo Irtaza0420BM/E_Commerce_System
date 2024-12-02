@@ -236,16 +236,16 @@ exports.generatereceipts = async (req, res) => {
     await ItemsHistory.insertMany(historyRecords);
 
     // Generate PDF asynchronously
-    const name = await Employee.findOne({ _id: userId });
-    const pdfBuffer = await receiptpdf(name.name, invoice);  // Wait for the PDF buffer
+    // const name = await Employee.findOne({ _id: userId });
+    // const pdfBuffer = await receiptpdf(name.name, invoice);  // Wait for the PDF buffer
 
-    // Save the PDF locally
-    const filePath = path.join(__dirname, 'generated_pdfs', `invoice_${invoice._id}.pdf`);
-    fs.mkdirSync(path.dirname(filePath), { recursive: true });
-    fs.writeFileSync(filePath, pdfBuffer);  // Write the PDF buffer to file
+    // // Save the PDF locally
+    // const filePath = path.join(__dirname, 'generated_pdfs', `invoice_${invoice._id}.pdf`);
+    // // fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    // // fs.writeFileSync(filePath, pdfBuffer);  // Write the PDF buffer to file
 
-    console.log(`PDF saved successfully at ${filePath}`);
-    res.status(200).json({success: true, message: "PDF has been generated."})
+    // // console.log(`PDF saved successfully at ${filePath}`);
+    // res.status(200).json({success: true, message: "PDF has been generated."})
 
   } catch (error) {
     console.error(error);
