@@ -5,6 +5,10 @@ const { isAdmin } = require("../middlewares/isAdmin")
  
 const router = express.Router()
 
+router.get('/', async(req,res) => {
+    res.json({message:"inventory is working"})
+})
+
 router.post('/createitem',  createItem)
 router.patch('/updateitem', identifier, updateItem )
 router.get('/read', identifier, isAdmin, read)

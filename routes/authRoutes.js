@@ -3,6 +3,9 @@ const authController = require('../controllers/authController')
 const { identifier } = require("../middlewares/authenticate")
 const router = express.Router()
 
+router.get('/', async(req,res) => {
+    res.json({message:"auth is working"})
+})
 router.post('/signup' , authController.register)  //All debugged, checked, tested, Done.
 router.post('/login' , authController.signin) //All debugged, checked, tested, Done.
 router.post('/signout',  authController.signout) //This is working, checked, tested, debugged, Done.
