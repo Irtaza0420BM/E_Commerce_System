@@ -9,9 +9,10 @@ const adminRouter = require("./routes/adminRoutes")
 const inventoryRouter = require("./routes/inventoryRoutes");
 const profileRouter = require("./routes/profileRoutes")
 const app = express()
+
 const corsOptions = {
     origin: ['http://localhost:5173',
-        "https://management-system-dun.vercel.app"], // Replace with your frontend's origin
+        "https://management-system-dun.vercel.app"], 
     credentials: true, // Allow credentials (cookies, authorization headers, etc.)
 };
 
@@ -38,16 +39,8 @@ app.get('/checking' , (req,res) => {
     res.json({message:"I am deployed"})
 })
 
-
 app.get('/' , (req,res) => {      
-    res.json({message:"Bie from the server."})
-})
-
-app.get('/' , (req,res) => {
-    res.json({message:"Bie from the server."})
-})
-app.get('/checking' , (req, res) => {
-    res.json({message: "Yes I am deployed."})
+    res.json({message:"Bie from the server." , mongoURI})
 })
 
 app.listen(process.env.PORT, ()=> {
