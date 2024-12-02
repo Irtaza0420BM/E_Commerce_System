@@ -245,7 +245,7 @@ exports.generatereceipts = async (req, res) => {
     // // fs.writeFileSync(filePath, pdfBuffer);  // Write the PDF buffer to file
 
     // // console.log(`PDF saved successfully at ${filePath}`);
-    // res.status(200).json({success: true, message: "PDF has been generated."})
+     res.status(200).json({success: true, message: "PDF has been generated."})
 
   } catch (error) {
     console.error(error);
