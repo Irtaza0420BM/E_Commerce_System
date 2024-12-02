@@ -80,18 +80,19 @@ exports.signin = async (req, res) => {
                 username: existingEmployee.username,
                 role: existingEmployee.role,
                 verified: existingEmployee.verified,
-                
             },
             process.env.TOKEN_SECRET,
             { expiresIn: '8h' }
         );
-
+        
+        // Setting cookie with credentials and domain considerations
         res.cookie('Authorization', 'Bearer ' + token, {
             expires: new Date(Date.now() + 8 * 3600000),
             httpOnly: true, 
             secure: process.env.NODE_ENV === 'production', 
+            sameSite: 'None', 
         });
-
+        
         return res.status(200).json({
             success: true,
             token,

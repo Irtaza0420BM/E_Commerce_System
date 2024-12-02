@@ -40,6 +40,7 @@ app.get('/checking' , (req,res) => {
 })
 
 app.get('/' , (req,res) => {      
+    console.log(process.env.NODE_ENV)
     res.json({message:"Bie from the server." , mongoURI})
 })
 
