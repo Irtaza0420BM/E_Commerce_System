@@ -142,7 +142,6 @@ function getDeliveryHTML(options){
     
 }
 
-
 async function getInvoice(options) {
     return new Promise(async (resolve,reject) => {
         try {

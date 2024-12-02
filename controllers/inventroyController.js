@@ -48,15 +48,43 @@ exports.createItem =  async(req, res) =>
       return res.status(500).json({success: false, message: error})
     }
 }
-// router.get('/items', async (req, res) => {
-//   try {
-//       const items = await Item.find();
-//       res.status(200).json({ success: true, items });
-//   } catch (error) {
-//       console.error('Error fetching items:', error);
-//       res.status(500).json({ success: false, message: 'Error fetching items', error });
-//   }
-// });
+exports.showItems= async(req, res) => {
+  try {
+    const result= await Item.aggregate([
+      {
+        $addFields: {
+          // Calculate the ratio of available quantity to required quantity
+          ratio: { $divide: ["$quantity", "$required_quantity"] },
+        }
+      },
+      {
+        $addFields: {
+          // Calculate the ratio of available quantity to required quantity
+          ratio: { $divide: ["$quantity", "$required_quantity"] },
+        }
+      },
+      {
+        $addFields: {
+          // Calculate the sold percentage based on different conditions
+          sold_percentage: {
+            $cond: {
+              if: { $eq: ["$ratio", 0] }, // If quantity is 0, sold percentage is 100%
+              then: 100,
+              else: 
+                { $multiply :[
+                  {$divide: [1, "$ratio"]}, 100] }
+            }
+          }
+        }
+      }
+    ]
+    );
+    res.status(200).json({success: true , result});
+  } catch (error) {
+    res.status(400).json({success: false , message : "Somehow we are unable to get Items Data."})
+  }
+};
+
 
 exports.read =  async(req, res) =>
 {
@@ -74,6 +102,7 @@ exports.read =  async(req, res) =>
     }
 
 }
+
 
 exports.searchItem = async (req, res) => {
   try {
@@ -216,11 +245,7 @@ exports.generatereceipts = async (req, res) => {
     fs.writeFileSync(filePath, pdfBuffer);  // Write the PDF buffer to file
 
     console.log(`PDF saved successfully at ${filePath}`);
-
-    // Send the PDF in response
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", "inline; filename=generated.pdf");
-    res.send(pdf); // You can also send the file to the client if needed
+    res.status(200).json({success: true, message: "PDF has been generated."})
 
   } catch (error) {
     console.error(error);
