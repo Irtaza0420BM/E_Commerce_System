@@ -68,15 +68,13 @@ exports.showItems= async(req, res) => {
           // Calculate the sold percentage based on different conditions
           sold_percentage: {
             $cond: {
-              if: { $eq: ["$ratio", 0] }, // If quantity is 0, sold percentage is 100%
-              then: 100,
-              else: 
-                { $multiply :[
-                  {$divide: [1, "$ratio"]}, 100] }
-            }
-          }
+              if: { $lt: ["$ratio", 2] }, // If quantity is 0, sold percentage is 100%
+              then: {$multiply: ["$ratio" , 50]} ,
+              else: {$divide: [1 , "$ratio"]}
         }
       }
+    }
+  }
     ]
     );
     res.status(200).json({success: true , result});
