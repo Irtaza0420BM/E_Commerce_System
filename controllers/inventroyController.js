@@ -532,7 +532,7 @@ exports.updateReceipt = async (req, res) => {
 
     const saleHistoryPromises = items.map(async (item) => {
       const { name, quantity } = item;
-      const price = item.totalamount
+      const price = item.totalAmount
       if (!name || !quantity || quantity <= 0 || !price) {
         throw new Error(`Invalid data for item: ${name}`);
       }
@@ -595,8 +595,8 @@ exports.updateReceipt = async (req, res) => {
     }
 
     const itemswithprice = items.map(item => {
-      const { totalamount, ...rest } = item; // Destructure to remove `totalamount`
-      return { ...rest, price: totalamount }; // Add `price` with the same value
+      const { totalAmount, ...rest } = item; // Destructure to remove `totalamount`
+      return { ...rest, price: totalAmount }; // Add `price` with the same value
     });
     
     
