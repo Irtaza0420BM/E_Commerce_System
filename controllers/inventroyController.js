@@ -532,7 +532,8 @@ exports.updateReceipt = async (req, res) => {
     let calculatedTotal = 0;
     const newOperations = [];
     const saleHistoryPromises = items.map(async (item) => {
-      const { name, quantity, price } = item;
+      const { name, quantity,  totalamount } = item;
+      const price = totalamount // An issue with totalAmount. 
       if (!name || !quantity || quantity <= 0 || !price) {
         throw new Error(`Invalid data for item: ${name}`);
       }
