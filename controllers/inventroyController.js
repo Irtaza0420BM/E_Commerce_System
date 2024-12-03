@@ -212,7 +212,7 @@ exports.generatereceipts = async (req, res) => {
       });
     }
 
-    const discount = (percentdiscount / 100) * price;
+    const discount = (percentdiscount / 100) * total;
     calculatedTotal = calculatedTotal - discount;
 
     // if (calculatedTotal !== total) {
