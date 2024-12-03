@@ -332,7 +332,7 @@ exports.oneinvoicepdf = async(req,res) => {
 exports.oneinvoiceid= async(req,res) => {
   try{
     const invoiceId = req.params.id
-    const invoice = await Invoice.findOne({invoiceId}).select({items, percentdiscount, total })
+    const invoice = await Invoice.findById(invoiceId).select({items: 1, percentdiscount:1 , total:1, _id: 0 })
     res.status(200).json({success: true, message:"Invoice" , invoice})
   }
   catch (error)
