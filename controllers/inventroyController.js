@@ -182,14 +182,14 @@ exports.generatereceipts = async (req, res) => {
         newstock = "checking";
       }
 
-      const expectedTotalPrice = dbItem.quantity * dbItem.selling_price_per_unit;
+      const expectedTotalPrice = quantity * dbItem.selling_price_per_unit;
 
-      // if (expectedTotalPrice !== price) {
-      //   return res.status(400).json({
-      //     success: false,
-      //     message: `Price mismatch for item: ${name}. Expected: ${expectedTotalPrice}, Received: ${price}`,
-      //   });
-      // }
+      if (expectedTotalPrice !== price) {
+        return res.status(400).json({
+          success: false,
+          message: `Price mismatch for item: ${name}. Expected: ${expectedTotalPrice}, Received: ${price}`,
+        });
+      }
 
       // Update item stock and history records
       await Item.updateOne(
@@ -212,6 +212,7 @@ exports.generatereceipts = async (req, res) => {
       });
     }
 
+    console.log(calculatedTotal)
     const discount = (percentdiscount / 100) * total;
     calculatedTotal = calculatedTotal - discount;
 
