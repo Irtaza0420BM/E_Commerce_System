@@ -254,6 +254,80 @@ exports.generatereceipts = async (req, res) => {
   }
 };
 
+exports.fetchfivereceipts = async(req, res) => {
+  try {
+    // Fetch receipts from the database
+    const receipts = await Invoice.find()
+        .select({ createdAt: 1, _id: 1, total: 1 })
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .exec();
+
+
+    // Format the `createdAt` field in the receipts
+    const formattedReceipts = receipts.map(receipt => ({
+        ...receipt._doc,
+        createdAt: new Intl.DateTimeFormat('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: '2-digit'
+        }).format(new Date(receipt.createdAt))
+    }));
+
+    // Send the response
+    res.status(200).json({
+        success: true,
+        message: "Invoices generated successfully",
+        receipts: formattedReceipts
+    });
+} catch (error) {
+    // Handle any errors
+    res.status(500).json({
+        success: false,
+        message: "Failed to fetch invoices",
+        error: error.message
+    });
+}
+
+}
+
+exports.allreceipts = async (req,res) => {
+  try{
+    const receipts = await Invoice.find().select({createdAt: 1, _id: 1, total:1}).sort({createdAt: -1})
+    const formattedReceipts = receipts.map(receipt =>({
+      ...receipt._doc,
+      createdAt: new Intl.DateTimeFormat('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: '2-digit'
+      }).format(new Date(receipt.createdAt))
+    }))
+    res.status(200).json({success: true, message: "result", formattedReceipts})
+  }
+ 
+  catch(error)
+  {
+    res.status(500).json({success: false, message: "Unable to get to database at the moment."})
+  }
+}
+
+exports.oneinvoice = async(req,res) => {
+  const invoiceId = req.params.id; // Access the id from the URL path
+  //I will do upload PDF, here.
+  try {
+      const invoice = await Invoice.findById(invoiceId);
+      
+      if (!invoice) {
+          return res.status(404).json({ success: false, message: "Invoice not found" });
+      }
+
+      res.status(200).json({ success: true, invoice });
+    }
+  catch(error)
+  {
+    res.status(500).json({success: false, message:" This is Internal Server," , error})
+  }
+}
 //Since its Update Route it is best practice to make it a patch route.
 exports.updateItem = async (req, res) => {
   const userId = req.user.userId

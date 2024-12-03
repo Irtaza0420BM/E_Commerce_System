@@ -1,5 +1,5 @@
 const express = require("express")
-const { generatereceipts, createItem, updateItem, updateReceipt, read, searchItem, fetchItem, searchCustomer, fetchCustomer, showItems } = require("../controllers/inventroyController")
+const { generatereceipts, createItem, updateItem, updateReceipt, read, searchItem, fetchItem, searchCustomer, fetchCustomer, showItems, fetchfivereceipts, allreceipts, oneinvoice } = require("../controllers/inventroyController")
 const { identifier } = require("../middlewares/authenticate")
 const { isAdmin } = require("../middlewares/isAdmin")
  
@@ -8,6 +8,10 @@ const router = express.Router()
 router.get('/', async(req,res) => {
     res.json({message:"inventory is working"})
 })
+
+router.get('/invoice/:id', oneinvoice)
+router.get('/allinvoice', allreceipts)
+router.get('/fiveinvoice', fetchfivereceipts)
 router.get('/read', showItems)
 router.post('/createitem',  createItem)
 router.patch('/updateitem', identifier, updateItem )
@@ -20,28 +24,6 @@ router.post('/searchcustomer', identifier, searchCustomer)
 router.post('/fetchcustomer', identifier, fetchCustomer)
 
 module.exports=router
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
