@@ -18,9 +18,9 @@ exports.dashboard = async (req, res) => {
       console.log(salesMetrics)
       const dashboardMetrics = itemMetrics[0].ItemsInfo
       res.status(200).json({
-        totalSales: salesMetrics[0].totalSales,
-        totalSoldQuantity: salesMetrics[0].totalSoldQuantity,
-        totalProfit: salesMetrics[0].totalProfit,
+          totalSales: salesMetrics?.[0]?.totalSales ?? 0,
+          totalSoldQuantity: salesMetrics?.[0]?.totalSoldQuantity ?? 0,
+          totalProfit: salesMetrics?.[0]?.totalProfit ?? 0,
         //For Dashboard Metrics`
         ItemsinStock: dashboardMetrics[0].totalStock|| 0,
         ItemsQuantity: dashboardMetrics[0].totalQuantity || 0,
