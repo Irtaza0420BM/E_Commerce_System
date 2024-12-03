@@ -466,8 +466,9 @@ exports.fetchCustomer = async (req, res) => {
 };
 exports.updateReceipt = async (req, res) => {
   const createdBy = req.user.userId
-  const { oldinvoice_id, customername, items, total } = req.body;
+  const { oldinvoice_id, customername, items, total , percentdiscount =0 } = req.body;
 
+  console.log(req.user.userId,  ", , , ," , req.body )
   if (!oldinvoice_id || !createdBy || !customername || !items || !Array.isArray(items) || items.length === 0 || !total) {
     return res.status(400).json({
       success: false,
@@ -617,3 +618,4 @@ exports.updateReceipt = async (req, res) => {
     });
   }
 };
+
