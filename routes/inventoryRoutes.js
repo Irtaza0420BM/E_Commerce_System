@@ -1,5 +1,5 @@
 const express = require("express")
-const { generatereceipts, createItem, updateItem, updateReceipt, read, searchItem, fetchItem, searchCustomer, fetchCustomer, showItems, fetchfivereceipts, allreceipts, oneinvoice } = require("../controllers/inventroyController")
+const { generatereceipts, createItem, updateItem, updateReceipt, read, searchItem, fetchItem, searchCustomer, fetchCustomer, showItems, fetchfivereceipts, allreceipts, oneinvoice, oneinvoiceid, oneinvoicepdf } = require("../controllers/inventroyController")
 const { identifier } = require("../middlewares/authenticate")
 const { isAdmin } = require("../middlewares/isAdmin")
  
@@ -9,7 +9,8 @@ router.get('/', async(req,res) => {
     res.json({message:"inventory is working"})
 })
 
-router.get('/invoice/:id', oneinvoice)
+router.get('/invoiceid/:id', oneinvoiceid)
+router.get('/invoicepdf/:id', oneinvoicepdf)
 router.get('/allinvoice', allreceipts)
 router.get('/fiveinvoice', fetchfivereceipts)
 router.get('/read', showItems)

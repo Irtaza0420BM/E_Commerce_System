@@ -7,12 +7,14 @@ const mongoose = require("mongoose");
 
 exports.dashboard = async (req, res) => {
     try {
+      const {startDate , endDate} = req.query
+
       const [itemMetrics, salesMetrics, graphsdata] = await Promise.all([
         getItemMetrics(),
-        getSalesMetrics(),
+        getSalesMetrics(startDate, endDate),
         get7daysMetrics()
       ]);
-      console.log(graphsdata)
+      console.log(salesMetrics)
       const dashboardMetrics = itemMetrics[0].ItemsInfo
       res.status(200).json({
         totalSales: salesMetrics[0].totalSales,
@@ -133,48 +135,62 @@ async function getItemMetrics() {
       }
       ]
       );
-  }
-async function getSalesMetrics() {
-    return Invoice.aggregate([
-        { $unwind:  "$items" }, 
-      
-        {
-          $lookup: {
-            from: "items", 
-            localField: "items.name", 
-            foreignField: "name", 
-            as: "result",
-          },
-        },
+}
 
-        {
-            $addFields: { 
-              "Revenue": { 
-                $subtract: [
-                  "$total", 
-                  { 
-                    $multiply: [
-                      { $arrayElemAt: ["$result.buying_price_per_unit", 0] },
-                      "$items.quantity"
-                    ]
-                  }
-                ] 
-              }
+async function getSalesMetrics(startDate, endDate) {
+  const matchcondition = {}
+  if (startDate && endDate) {
+    matchcondition.createdAt = {
+      $gte: new Date(startDate + "T00:00:00Z"),
+      $lte: new Date(endDate + "T23:59:59.999Z")
+    };
+  }
+  return Invoice.aggregate([
+    // Match documents within the date range
+    
+    {
+      $match: { matchcondition }
+    },
+
+    { $unwind: "$items" },
+
+    {
+      $lookup: {
+        from: "items", 
+        localField: "items.name", 
+        foreignField: "name", 
+        as: "result",
+      },
+    },
+
+    {
+      $addFields: {
+        "Revenue": { 
+          $subtract: [
+            "$total", 
+            { 
+              $multiply: [
+                { $arrayElemAt: ["$result.buying_price_per_unit", 0] },
+                "$items.quantity"
+              ]
             }
-        },
+          ] 
+        }
+      }
+    },
 
-        {
-          $group: {
-            _id: null, // Group all documents together
-            totalSales: { $sum: "$total" }, // Sum the total sales from Invoice
-            totalSoldQuantity: { $sum: "$items.quantity" }, // Sum the quantity sold for all items
-            totalProfit: { $sum: "$Revenue" }, // Sum the profit for all items
-          },
-        },
-      
-      ]);
-      
-  }
+    {
+      $group: {
+        _id: null, // Group all documents together
+        totalSales: { $sum: "$total" }, // Sum the total sales from Invoice
+        totalSoldQuantity: { $sum: "$items.quantity" }, // Sum the quantity sold for all items
+        totalProfit: { $sum: "$Revenue" }, // Sum the profit for all items
+      },
+    },
+
+  ]);
+}
+
 async function get7daysMetrics(){
     return Invoice.aggregate([
         // Step 1: Unwind the "items" array

@@ -311,7 +311,7 @@ exports.allreceipts = async (req,res) => {
   }
 }
 
-exports.oneinvoice = async(req,res) => {
+exports.oneinvoicepdf = async(req,res) => {
   const invoiceId = req.params.id; // Access the id from the URL path
   //I will do upload PDF, here.
   try {
@@ -326,6 +326,18 @@ exports.oneinvoice = async(req,res) => {
   catch(error)
   {
     res.status(500).json({success: false, message:" This is Internal Server," , error})
+  }
+}
+
+exports.oneinvoiceid= async(req,res) => {
+  try{
+    const invoiceId = req.params.id
+    const invoice = await Invoice.findOne({invoiceId}).select({items, percentdiscount, total })
+    res.status(200).json({success: true, message:"Invoice" , invoice})
+  }
+  catch (error)
+  {
+    res.status(500).json({success: false, message: "No req.params.id received, or id is wrong, plz make it right."})
   }
 }
 //Since its Update Route it is best practice to make it a patch route.
