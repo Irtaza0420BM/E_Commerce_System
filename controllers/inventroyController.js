@@ -468,7 +468,6 @@ exports.updateReceipt = async (req, res) => {
   const createdBy = req.user.userId
   const { oldinvoice_id, customername, items, total , percentdiscount =0 } = req.body;
 
-  console.log(req.user.userId,  ", , , ," , req.body )
   if (!oldinvoice_id || !createdBy || !customername || !items || !Array.isArray(items) || items.length === 0 || !total) {
     return res.status(400).json({
       success: false,
@@ -497,7 +496,6 @@ exports.updateReceipt = async (req, res) => {
     // Perform bulkWrite for restoring old item quantities
     const restoreResult = await Item.bulkWrite(restoreOperations);
 
-    // Generate history records for restored items
     const restoreHistoryPromises = oldinvoice.items.map(async (olditem) => {
       const dbItem = await Item.findOne({ name: olditem.name });
       if (!dbItem) {
@@ -531,9 +529,10 @@ exports.updateReceipt = async (req, res) => {
     // Processing new items and calculating totals
     let calculatedTotal = 0;
     const newOperations = [];
+
     const saleHistoryPromises = items.map(async (item) => {
-      const { name, quantity,  totalamount } = item;
-      const price = totalamount // An issue with totalAmount. 
+      const { name, quantity } = item;
+      const price = item.totalamount
       if (!name || !quantity || quantity <= 0 || !price) {
         throw new Error(`Invalid data for item: ${name}`);
       }
@@ -595,8 +594,13 @@ exports.updateReceipt = async (req, res) => {
       });
     }
 
-    // Save updated invoice
-    oldinvoice.set({ createdBy, customername, items, total });
+    const itemswithprice = items.map(item => {
+      const { totalamount, ...rest } = item; // Destructure to remove `totalamount`
+      return { ...rest, price: totalamount }; // Add `price` with the same value
+    });
+    
+    
+    oldinvoice.set({ createdBy, customername, items: itemswithprice, total });
     await oldinvoice.save();
 
     // Save all history records
