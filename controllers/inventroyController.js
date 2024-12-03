@@ -136,7 +136,6 @@ exports.fetchItem = async (req, res) => {
 // Invoice can be changed, but ItemHistory will be immutable. So it will be like a log of all the transactions. 
 exports.generatereceipts = async (req, res) => {
   const userId = req.user.userId;
-  console.log(req.body); 
   const { customername, items, total, percentdiscount = 0 } = req.body;
   
   if (!customername || !items || !Array.isArray(items) || items.length === 0 || !total) {
@@ -152,7 +151,8 @@ exports.generatereceipts = async (req, res) => {
 
     // Process each item
     for (let item of items) {
-      const { name, quantity, price } = item;
+      const { name, quantity, totalAmount } = item;
+      const price = totalAmount;
       if (!name || !quantity || quantity <= 0 || !price) {
         return res.status(400).json({
           success: false,
@@ -212,8 +212,8 @@ exports.generatereceipts = async (req, res) => {
       });
     }
 
-    // const discount = (percentdiscount / 100) * price;
-    // calculatedTotal = calculatedTotal - discount;
+    const discount = (percentdiscount / 100) * price;
+    calculatedTotal = calculatedTotal - discount;
 
     // if (calculatedTotal !== total) {
     //   return res.status(400).json({
@@ -223,10 +223,16 @@ exports.generatereceipts = async (req, res) => {
     // }
 
     // Create invoice
+    const itemswithprice = items.map(item => {
+      const { totalAmount, ...rest } = item; // Destructure to remove `totalamount`
+      return { ...rest, price: totalAmount }; // Add `price` with the same value
+    });
+    
+
     const invoice = await Invoice.create({
       createdBy: userId,
       customername,
-      items,
+      items: itemswithprice,
       percentdiscount: items[0].percentdiscount,
       total: calculatedTotal,
     });
