@@ -7,7 +7,8 @@ const mongoose = require("mongoose");
 
 exports.dashboard = async (req, res) => {
     try {
-      const {startDate , endDate} = req.query
+      const startDate = req.query.startDate || '2024-01-01'; // Default to the beginning of the year
+      const endDate = req.query.endDate || new Date().toISOString().split('T')[0]; // Default to today's date
 
       const [itemMetrics, salesMetrics, graphsdata] = await Promise.all([
         getItemMetrics(),
@@ -138,58 +139,60 @@ async function getItemMetrics() {
 }
 
 async function getSalesMetrics(startDate, endDate) {
-  const matchcondition = {}
-  if (startDate && endDate) {
-    matchcondition.createdAt = {
-      $gte: new Date(startDate + "T00:00:00Z"),
-      $lte: new Date(endDate + "T23:59:59.999Z")
-    };
-  }
-  return Invoice.aggregate([
-    // Match documents within the date range
-    
-    {
-      $match: { matchcondition }
-    },
-
-    { $unwind: "$items" },
-
-    {
-      $lookup: {
-        from: "items", 
-        localField: "items.name", 
-        foreignField: "name", 
-        as: "result",
-      },
-    },
-
-    {
-      $addFields: {
-        "Revenue": { 
-          $subtract: [
-            "$total", 
-            { 
-              $multiply: [
-                { $arrayElemAt: ["$result.buying_price_per_unit", 0] },
-                "$items.quantity"
-              ]
-            }
-          ] 
+  try {
+    return await Invoice.aggregate([
+      {
+        $match: {
+          createdAt: {
+            $gte: new Date(startDate + "T00:00:00Z"), // Start date (greater than or equal)
+            $lte: new Date(endDate + "T23:59:59.999Z")    // End date (less than or equal)
+          }
         }
-      }
-    },
-
-    {
-      $group: {
-        _id: null, // Group all documents together
-        totalSales: { $sum: "$total" }, // Sum the total sales from Invoice
-        totalSoldQuantity: { $sum: "$items.quantity" }, // Sum the quantity sold for all items
-        totalProfit: { $sum: "$Revenue" }, // Sum the profit for all items
       },
-    },
-
-  ]);
+  
+      { $unwind: "$items" },
+  
+      {
+        $lookup: {
+          from: "items", 
+          localField: "items.name", 
+          foreignField: "name", 
+          as: "result",
+        },
+      },
+  
+      {
+        $addFields: {
+          "Revenue": { 
+            $subtract: [
+              "$total", 
+              { 
+                $multiply: [
+                  { $arrayElemAt: ["$result.buying_price_per_unit", 0] },
+                  "$items.quantity"
+                ]
+              }
+            ] 
+          }
+        }
+      },
+  
+      {
+        $group: {
+          _id: null, // Group all documents together
+          totalSales: { $sum: "$total" }, // Sum the total sales from Invoice
+          totalSoldQuantity: { $sum: "$items.quantity" }, // Sum the quantity sold for all items
+          totalProfit: { $sum: "$Revenue" }, // Sum the profit for all items
+        },
+      },
+  
+    ]);
+  } catch (error) {
+    console.error("Error in getSalesMetrics:", error.message);
+    throw error; // Re-throw the error to be handled by the caller
+  }
 }
+
 
 async function get7daysMetrics(){
     return Invoice.aggregate([
