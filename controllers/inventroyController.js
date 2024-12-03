@@ -281,7 +281,6 @@ exports.fetchfivereceipts = async(req, res) => {
         }).format(new Date(receipt.createdAt))
     }));
 
-    // Send the response
     res.status(200).json({
         success: true,
         message: "Invoices generated successfully",
@@ -416,7 +415,7 @@ exports.updateItem = async (req, res) => {
 
       // Log the update in the history
       await ItemsHistory.create({
-        employee: userId._id,
+        employee: userId,
         action: "Update",
         item: dbItem._id,
         deltaQuantity: quantity,
