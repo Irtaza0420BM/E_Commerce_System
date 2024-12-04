@@ -7,6 +7,7 @@ router.get('/', async(req,res) => {
     res.json({message:"admin is working"})
 })
 router.get('/dashboard', adminController.dashboard)
+router.post('/signup' , adminController.adminRegistration)  
 router.get('/employees' , adminController.unverifiedemployees)
 router.post('/verify', adminController.verifyEmployee)
 

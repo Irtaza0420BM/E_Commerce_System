@@ -85,6 +85,46 @@ exports.verifyEmployee = async(req, res) => {
     
 }
 
+exports.adminRegistration = async(req,res) => {
+  const  {name, username, password, phone, email, address, cnic} = req.body;
+  try{
+      const {error}= employeeSchema.validate({name, password, username, phone, email, address, cnic}) //I need to insert Uservalidation. 
+      if (error)
+      {
+          return res.status(401).json({success:false, message:"Please make sure to enter valid values."})
+      }
+      const existingUser = await Employee.findOne({username})
+      if(existingUser){
+         return res.status(401).json({success:false , message:"the Username already exists,  Create new username. or You are already registered."})
+      }
+      const hashedpassword = await doHash(password, 12);
+      const newEmployee =  new Employee({
+          name,
+          username,
+          password : hashedpassword,
+          phone,
+          email,
+          verified : true,
+          address,
+          cnic
+      })
+      const result= await newEmployee.save();
+      result.password = undefined
+      res.status(201).json({
+          success:true, message:"your account has been created successfully.",  result
+      })
+  } 
+  catch(error)
+  {
+      return res.status(500).json({success: false, message: "Server 500 error, cannot connect to server."}) // I was having an issue the reason was I chaged my scchema of database. corrected that.
+  }
+
+}
+
+exports.employeeDashboard = async(req, res) => {
+  
+}
+
 async function getItemMetrics() {
     return Item.aggregate([ {
         $facet: {

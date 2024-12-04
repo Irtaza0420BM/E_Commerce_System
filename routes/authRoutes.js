@@ -10,6 +10,7 @@ router.post('/signup' , authController.register)  //All debugged, checked, teste
 router.post('/login' , authController.signin) //All debugged, checked, tested, Done.
 router.post('/signout',  authController.signout) //This is working, checked, tested, debugged, Done.
 router.post('/islogin' , identifier ,authController.islogin)
+
 // router.patch('/changepassword', authController.changePassword)
 
 

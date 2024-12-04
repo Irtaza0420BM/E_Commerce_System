@@ -1,7 +1,8 @@
 const express = require("express")
-const { generatereceipts, createItem, updateItem, updateReceipt, read, searchItem, fetchItem, searchCustomer, fetchCustomer, showItems, fetchfivereceipts, allreceipts, oneinvoice, oneinvoiceid, oneinvoicepdf } = require("../controllers/inventroyController")
+const { createItem, updateItem, searchItem, fetchItem, showItems } = require("../controllers/inventroyController")
 const { identifier } = require("../middlewares/authenticate")
 const { isAdmin } = require("../middlewares/isAdmin")
+const { oneinvoiceid, oneinvoicepdf, allreceipts, fetchfivereceipts, generatereceipts, updateReceipt, searchCustomer, fetchCustomer } = require("../controllers/receiptsController")
  
 const router = express.Router()
 
