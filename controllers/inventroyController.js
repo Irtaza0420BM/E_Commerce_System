@@ -21,17 +21,11 @@ exports.createItem =  async(req, res) =>
         else if(quantity < required_quantity ) {
             stock = "Low stock needs shelving"
         }
-        try{
         const item= new Item({name, quantity, stock, required_quantity, buying_price_per_unit, selling_price_per_unit});
         const result = await item.save();
-      }
-      catch (error)
-      {
-        res.status(401).json({success: false, message: "Failed to create item", error})
-      }
-        
+    
         await ItemsHistory.create({
-          employee: userId._id,
+          employee: userId,
           action: 'Created',
           item: result._id,
           deltaQuantity: quantity,
