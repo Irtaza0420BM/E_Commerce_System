@@ -46,7 +46,8 @@ exports.signinSchema = joi.object({
         'string.min': 'Username must be at least 3 characters long.',
         'string.max': 'Username must not exceed 30 characters.',
       }),
-    password: joi.string().required().pattern(new RegExp('^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*_=+-]).{8,}$'))
+    password: joi.string().required().pattern(new RegExp('^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*_=+-]).{8,}$')).messages({
+        'string.pattern.base': 'Atleast 8 Alphanumeric, and One Capital letter, one small letter, one number and one special character is required.',})
 })
 
 

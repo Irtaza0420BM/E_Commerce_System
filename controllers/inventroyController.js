@@ -125,6 +125,7 @@ exports.fetchItem = async (req, res) => {
     res.status(500).json({ message: 'Error fetching item details', error });
   }
 };
+
 exports.updateItem = async (req, res) => {
   const userId = req.user.userId
   const { updateData } = req.body;
