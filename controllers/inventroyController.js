@@ -19,7 +19,7 @@ exports.createItem =  async(req, res) =>
             stock = "empty";
         } 
         else if(quantity < required_quantity ) {
-            stock = "Low stock needs shelving"
+            stock = "Low"
         }
         const item= new Item({name, quantity, stock, required_quantity, buying_price_per_unit, selling_price_per_unit});
         const result = await item.save();
@@ -48,26 +48,44 @@ exports.showItems= async(req, res) => {
         $addFields: {
           // Calculate the ratio of available quantity to required quantity
           ratio: { $divide: ["$quantity", "$required_quantity"] },
-        }
+        },
       },
       {
         $addFields: {
           sold_percentage: {
             $cond: {
-              if: {$eq: ["$ratio" , 0]},
-              then: 100,
-              else:{
+              if: { $eq: ["$ratio", 0] },
+              then: 100, // If ratio is 0, sold percentage is 100%
+              else: {
                 $cond: {
-                  if: { $lt: ["$ratio", 2] }, // If quantity is 0, sold percentage is 100%
-                  then: {$multiply: ["$ratio" , 50]} ,
-                  else: {$divide: [1 , "$ratio"]}
-                }
-              }
-            }
-          }
-        }
-     }
-    ]);
+                  if: { $lt: ["$ratio", 2] }, // If ratio < 2
+                  then: { $multiply: ["$ratio", 50] }, // Multiply ratio by 50
+                  else: { $divide: [1, "$ratio"] }, // Else divide 1 by ratio
+                },
+              },
+            },
+          },
+        },
+      },
+      {
+        $group: {
+          _id: "$stock", // Group by the `stock` field (e.g., "available" or "low")
+          total_items: { $sum: 1 }, // Count the total items in each group
+          average_ratio: { $avg: "$ratio" }, // Calculate the average ratio
+          average_sold_percentage: { $avg: "$sold_percentage" }, // Calculate the average sold percentage
+          items: {
+            $push: {
+              item: "$item", // Include item details in the group
+              quantity: "$quantity",
+              required_quantity: "$required_quantity",
+              ratio: "$ratio",
+              sold_percentage: "$sold_percentage",
+            },
+          },
+        },
+      },
+    ]
+    );
     res.status(200).json({success: true , result});
   } catch (error) {
     res.status(400).json({success: false , message : "Somehow we are unable to get Items Data."})
@@ -176,7 +194,7 @@ exports.updateItem = async (req, res) => {
     for (const { dbItem, quantity, buying_price_per_unit, sellingPricePerUnit } of itemsToUpdate) {
       let stock = "Available";
       if (dbItem.quantity + quantity < dbItem.required_quantity) {
-        stock = "Low stock needs shelving";
+        stock = "Low";
       }
 
       dbItem.quantity += quantity;
