@@ -75,6 +75,7 @@ exports.showItems= async(req, res) => {
           average_sold_percentage: { $avg: "$sold_percentage" }, // Calculate the average sold percentage
           items: {
             $push: {
+              name: "$name",
               item: "$item", // Include item details in the group
               quantity: "$quantity",
               required_quantity: "$required_quantity",

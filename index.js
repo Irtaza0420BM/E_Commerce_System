@@ -10,12 +10,12 @@ const profileRouter = require("./routes/profileRoutes")
 const mongodb = require("./utils/mongodb")
 const app = express()
 
-const corsOptions = {
+const corsOptions =
+ {
     origin: ['http://localhost:5173',
         "https://management-system-dun.vercel.app"], 
     credentials: true, // Allow credentials (cookies, authorization headers, etc.)
 };
-
 app.use(cors(corsOptions));
 
 mongodb
