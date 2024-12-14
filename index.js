@@ -16,6 +16,7 @@ const corsOptions =
         "https://management-system-dun.vercel.app"], 
     credentials: true, // Allow credentials (cookies, authorization headers, etc.)
 };
+
 app.use(cors(corsOptions));
 
 mongodb
