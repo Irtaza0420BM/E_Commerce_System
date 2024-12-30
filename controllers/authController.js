@@ -4,12 +4,18 @@ const {doHash, doHashValidation} = require('../utils/hashing')
 const {employeeSchema , signinSchema} = require('../middlewares/validator')
 
 exports.register = async (req, res) => {
-     const  {name, username, password, phone, email, address, cnic} = req.body;
+    console.log(req.body)
+     const  {name, username, password, phone, email, address, role="employee"} = req.body;
+     let verified = false;
+     if(role == 'admin')
+     {
+        verified = true;
+     }
     try{
-        const {error}= employeeSchema.validate({name, password, username, phone, email, address, cnic}) //I need to insert Uservalidation. 
+        const {error}= employeeSchema.validate({name, password, username, phone, email, address}) //I need to insert Uservalidation. 
         if (error)
         {
-            return res.status(401).json({success:false, message:"Please make sure to enter valid values."})
+            return res.status(401).json({success:false, message:error.details[0].message})
         }
         const existingUser = await Employee.findOne({username})
         if(existingUser){
@@ -23,7 +29,7 @@ exports.register = async (req, res) => {
             phone,
             email,
             address,
-            cnic
+            verified,
         })
         const result= await newEmployee.save();
         result.password = undefined
@@ -33,7 +39,8 @@ exports.register = async (req, res) => {
     } 
     catch(error)
     {
-        return res.status(500).json({success: false, message: "Server 500 error, cannot connect to server."}) // I was having an issue the reason was I chaged my scchema of database. corrected that.
+        console.log(error)
+        return res.status(500).json({success: false, message: "this man"}) // I was having an issue the reason was I chaged my scchema of database. corrected that.
     }
 
 };

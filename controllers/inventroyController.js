@@ -142,6 +142,7 @@ exports.fetchItem = async (req, res) => {
 exports.updateItem = async (req, res) => {
   const userId = req.user.userId
   const { updateData } = req.body;
+  console.log(updateData)
 
   if (!updateData || !Array.isArray(updateData) || updateData.length === 0) {
     return res.status(400).json({

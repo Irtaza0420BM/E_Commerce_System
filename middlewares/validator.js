@@ -22,6 +22,8 @@ exports.employeeSchema = joi.object({
     name: joi.string().required(),
     email: joi.string().min(6).max(60).required().email({tlds:{ allow:['com', 'net']}}).messages({
         'string.email': 'Only email addresses of the form of abc@abc.com or abc@abc.net are allowed',
+        'string.empty': 'Email is required.',
+        'string.min': 'Email must be at least 6 characters long.',        
     }),
     username: joi.string().required().pattern(new RegExp('^[a-zA-Z0-9]+$')).min(3).max(30).messages({
       'string.pattern.base': 'Username can only contain letters and numbers, no spaces or special characters.',
@@ -36,7 +38,6 @@ exports.employeeSchema = joi.object({
     }),
     phone: joi.string().required().pattern(new RegExp('^[0-9]{11}$')),
     address: joi.string().required(),
-    cnic: joi.string().required().pattern(new RegExp('^[0-9]{5}-[0-9]{7}-[0-9]{1}$'))
 })
 //Will validate Email and password (no need to open it.)
 exports.signinSchema = joi.object({

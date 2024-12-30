@@ -85,6 +85,27 @@ exports.verifyEmployee = async(req, res) => {
     
 }
 
+exports.deleteEmployee = async(req, res) => {
+  try {
+      const { employeeId } = req.body;
+      const toVerifyEmployee = await Employee.findByIdAndDelete({ _id: employeeId });
+      console.log(toVerifyEmployee)
+  
+      if (!toVerifyEmployee) {
+          return res.status(404).json({ success: false, message: "Employee not found." });
+      }
+    
+      res.status(200).json({ success: true, message: "Employee has been deleted." , result });
+  } 
+  catch (error) {
+      console.error(error);
+      console.log(error, "this is the error"); 
+      res.status(500).json({ success: false, message: "An error occurred while verifying the employee." });
+  }
+  
+}
+
+
 exports.adminRegistration = async(req,res) => {
   const  {name, username, password, phone, email, address, cnic} = req.body;
   try{

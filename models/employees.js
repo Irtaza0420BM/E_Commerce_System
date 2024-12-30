@@ -14,7 +14,6 @@ const employee = new mongoose.Schema({
     },
     phone:{ type: String , required: true, unique: true},
     role: { type: String, enum: ['admin', 'employee'], default: 'employee' },
-    cnic: { type: String, required: true },
     address: {type : String, required: true},
     verified: {type: Boolean, default: false},
 });

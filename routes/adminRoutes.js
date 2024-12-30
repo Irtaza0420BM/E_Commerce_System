@@ -10,5 +10,6 @@ router.get('/dashboard', adminController.dashboard)
 router.post('/signup' , adminController.adminRegistration)  
 router.get('/employees' , adminController.unverifiedemployees)
 router.post('/verify', adminController.verifyEmployee)
+router.post('/delete', adminController.deleteEmployee)
 
 module.exports = router
