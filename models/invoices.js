@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const invoiceSchema = new mongoose.Schema({
+    _id: { type: String, required: true },  // store invoice IDs as string
     createdBy: {type: mongoose.Schema.Types.ObjectId, 
         ref: 'Employee', 
         required: true   

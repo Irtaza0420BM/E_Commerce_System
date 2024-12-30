@@ -3,14 +3,16 @@ const {ItemsHistory} = require("../models/itemsHistory.js");
 const {Invoice} = require('../models/invoices.js')
 const {Employee} = require("../models/employees.js")
 const { receiptpdf } = require('../middlewares/invoice.js');
+const { Counter } = require('../models/counter.js');
 const fs = require('fs');
 const path = require('path');
+const { identifier } = require('../middlewares/authenticate.js');
 
 
 exports.generatereceipts = async (req, res) => {
-    const userId = req.user.userId;
+  console.log(req.user, " I am here")
+  const userId = req.user.userId;
     const { customername, items, total, percentdiscount = 0 } = req.body;
-    
     if (!customername || !items || !Array.isArray(items) || items.length === 0 || !total) {
       return res.status(400).json({
         success: false,
@@ -84,8 +86,7 @@ exports.generatereceipts = async (req, res) => {
           totalPrice: expectedTotalPrice,
         });
       }
-  
-      console.log(calculatedTotal)
+      const totalbeforeDiscount = calculatedTotal;
       const discount = (percentdiscount / 100) * total;
       calculatedTotal = calculatedTotal - discount;
   
@@ -101,30 +102,41 @@ exports.generatereceipts = async (req, res) => {
         const { totalAmount, ...rest } = item; // Destructure to remove `totalamount`
         return { ...rest, price: totalAmount }; // Add `price` with the same value
       });
-      
-  
+      const counter = await Counter.findByIdAndUpdate(
+        "invoice_id",  // e.g. 'userId'
+        { $inc: { sequence_value: 1 } },
+        { new: true, upsert: true }
+      );
+      const id = "INV-" + counter.sequence_value;
+      console.log(id)  
       const invoice = await Invoice.create({
+        _id: id,
         createdBy: userId,
         customername,
         items: itemswithprice,
-        percentdiscount: items[0].percentdiscount,
+        percentdiscount: percentdiscount,
         total: calculatedTotal,
       });
-      
-      await ItemsHistory.insertMany(historyRecords);
-  
+      console.log(invoice)
+      const Itemshistory = await ItemsHistory.insertMany(historyRecords);
       // Generate PDF asynchronously
       const name = await Employee.findOne({ _id: userId });
-      const pdfBuffer = await receiptpdf(name.name, invoice);  // Wait for the PDF buffer
+      const pdfBuffer = await receiptpdf(name.name, invoice, totalbeforeDiscount);  // Wait for the PDF buffer
   
       // Save the PDF locally
       const filePath = path.join(__dirname, 'generated_pdfs', `invoice_${invoice._id}.pdf`);
-      fs.mkdirSync(path.dirname(filePath), { recursive: true });
-      fs.writeFileSync(filePath, pdfBuffer);  // Write the PDF buffer to file
-  
+      await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
+      await fs.promises.writeFile(filePath, pdfBuffer);
       console.log(`PDF saved successfully at ${filePath}`);
-       res.status(200).json({success: true, message: "PDF has been generated."})
   
+      // Set headers to send PDF as response
+      res.set({
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename=invoice_${invoice._id}.pdf`,
+        'Content-Length': pdfBuffer.length,
+      });
+  
+      return res.send(pdfBuffer);
     } catch (error) {
       console.error(error);
       return res.status(500).json({
@@ -133,6 +145,7 @@ exports.generatereceipts = async (req, res) => {
       });
     }
   };
+  
   
 exports.fetchfivereceipts = async(req, res) => {
     try {
@@ -190,24 +203,7 @@ exports.allreceipts = async (req,res) => {
     }
   }
   
-exports.oneinvoicepdf = async(req,res) => {
-    const invoiceId = req.params.id; // Access the id from the URL path
-    //I will do upload PDF, here.
-    try {
-        const invoice = await Invoice.findById(invoiceId);
-        
-        if (!invoice) {
-            return res.status(404).json({ success: false, message: "Invoice not found" });
-        }
-  
-        res.status(200).json({ success: true, invoice });
-      }
-    catch(error)
-    {
-      res.status(500).json({success: false, message:" This is Internal Server," , error})
-    }
-  }
-  
+
 exports.oneinvoiceid= async(req,res) => {
     try{
       const invoiceId = req.params.id
@@ -411,4 +407,36 @@ exports.updateReceipt = async (req, res) => {
     }
   };
   
+exports.oneinvoicepdf =async (req,res) => {
+  const invoice = await Invoice.findById(req.params.id);
+  console.log(invoice)
+  const name = await Employee.findOne({ _id: invoice.createdBy });
+  const totalbeforeDiscount = invoice.items.reduce((acc, item) => acc + item.price, 0);
+  const pdfBuffer = await receiptpdf(name.name, invoice, totalbeforeDiscount);  // Wait for the PDF buffer
+
+  // Save the PDF locally
+  const filePath = path.join(__dirname, 'generated_pdfs', `invoice_${invoice._id}.pdf`);
+  await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
+  await fs.promises.writeFile(filePath, pdfBuffer);
+  console.log(`PDF saved successfully at ${filePath}`);
+
+  // Set headers to send PDF as response
+  res.set({
+    'Content-Type': 'application/pdf',
+    'Content-Disposition': `attachment; filename=invoice_${invoice._id}.pdf`,
+    'Content-Length': pdfBuffer.length,
+  });
+  return res.send(pdfBuffer);
+    
+    
+}
+
+async function getNextSequenceValue(counterName) {
+    const counter = await Counter.findByIdAndUpdate(
+      counterName,  // e.g. 'userId'
+      { $inc: { sequence_value: 1 } },
+      { new: true, upsert: true }
+    );
+    return counter.sequence_value;
+  }
   

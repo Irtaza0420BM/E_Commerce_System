@@ -20,10 +20,11 @@ router.patch('/updateitem', identifier, updateItem )
 // router.get('/read', identifier, isAdmin, read)
 router.post('/searchitem', identifier, searchItem)
 router.post('/fetchitem', identifier, fetchItem )
-router.post('/invoice',  generatereceipts)
 router.patch('/updatereceipt', identifier, updateReceipt)
 router.post('/searchcustomer', identifier, searchCustomer)
 router.post('/fetchcustomer', identifier, fetchCustomer)
+router.post('/invoice', identifier, generatereceipts)
+router.get('/invoice/:id', oneinvoicepdf)
 // router.post('/stockinfo', identifier , stockinfo)
 module.exports=router
 

@@ -25,6 +25,7 @@ exports.identifier = (req, res, next) => {
         if (jwtVerified) {
             req.user = jwtVerified;
             if (req.user.role === 'admin') {
+                console.log(req.user)
                 return next();
             }
             if (req.user.role === 'employee') {
