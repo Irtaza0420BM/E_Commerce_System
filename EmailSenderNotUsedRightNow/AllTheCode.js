@@ -12,13 +12,14 @@ const transporter = nodemailer.createTransport({
 
 // Function to send verification email
 async function sendVerificationEmail(userEmail, verificationToken) {
-  const verificationLink = `http://localhost:5000/verify-email?token=${verificationToken}`;
+  const EmployeeverificationCode = generateVerificationToken();
+  const AdminverificationCode = generateVerificationToken();
 
   const mailOptions = {
     from: 'your-email@gmail.com',
     to: userEmail,
     subject: 'Email Verification',
-    text: `Please verify your email by clicking the link: ${verificationLink}`
+    text: `If you want employee do this ${EmployeeverificationCode} and if you want admin do this ${AdminverificationCode}`
   };
 
   try {

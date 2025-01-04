@@ -247,165 +247,187 @@ exports.fetchCustomer = async (req, res) => {
       res.status(500).json({ message: 'Error fetching customer details', error });
     }
   };
+
 exports.updateReceipt = async (req, res) => {
-    const createdBy = req.user.userId
-    const { oldinvoice_id, customername, items, total , percentdiscount =0 } = req.body;
-  
+    const createdBy = req.user.userId;
+    const { oldinvoice_id, customername, items, total, percentdiscount = 0 } = req.body;
+
     if (!oldinvoice_id || !createdBy || !customername || !items || !Array.isArray(items) || items.length === 0 || !total) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid input. Please provide all required fields.",
-      });
-    }
-  
-    try {
-      // Fetch the old invoice
-      const oldinvoice = await Invoice.findById(oldinvoice_id);
-      if (!oldinvoice) {
-        return res.status(404).json({
-          success: false,
-          message: "Invoice ID is either wrong or does not exist.",
-        });
-      }
-  
-      const historyRecords = [];
-      const restoreOperations = oldinvoice.items.map((olditem) => ({
-        updateOne: {
-          filter: { name: olditem.name },
-          update: { $inc: { quantity: olditem.quantity } },
-        },
-      }));
-  
-      // Perform bulkWrite for restoring old item quantities
-      const restoreResult = await Item.bulkWrite(restoreOperations);
-  
-      const restoreHistoryPromises = oldinvoice.items.map(async (olditem) => {
-        const dbItem = await Item.findOne({ name: olditem.name });
-        if (!dbItem) {
-          throw new Error(`Item not found: ${olditem.name}`);
-        }
-  
-        historyRecords.push({
-          employee: oldinvoice.createdBy,
-          item: dbItem._id,
-          action: "Returned",
-          deltaQuantity: olditem.quantity,
-          currentQuantity: dbItem.quantity,
-          purchasePricePerUnit: dbItem.buying_price_per_unit,
-          sellingPricePerUnit: dbItem.selling_price_per_unit,
-          discountPercent: 0,
-          totalPrice: 0,
-        });
-      });
-  
-      await Promise.all(restoreHistoryPromises);
-  
-      // Create a new version of the invoice
-      oldinvoice.versions.push({
-        __v: oldinvoice.__v,
-        createdBy: oldinvoice.createdBy,
-        createdAt: oldinvoice.createdAt,
-        items: oldinvoice.items,
-        total: oldinvoice.total,
-      });
-  
-      // Processing new items and calculating totals
-      let calculatedTotal = 0;
-      const newOperations = [];
-  
-      const saleHistoryPromises = items.map(async (item) => {
-        const { name, quantity } = item;
-        const price = item.totalAmount
-        if (!name || !quantity || quantity <= 0 || !price) {
-          throw new Error(`Invalid data for item: ${name}`);
-        }
-  
-        const dbItem = await Item.findOne({ name });
-        if (!dbItem) {
-          throw new Error(`Item not found: ${name}`);
-        }
-  
-        if (dbItem.quantity < quantity) {
-          throw new Error(`Insufficient stock for item: ${name}`);
-        }
-  
-        let stock = "Available";
-        if (dbItem.quantity - quantity === 0) {
-          stock = "empty";
-        } else if (dbItem.quantity - quantity < dbItem.required_quantity) {
-          stock = "Low stock needs shelving";
-        }
-  
-        const expectedTotalPrice = dbItem.selling_price_per_unit * quantity;
-        if (expectedTotalPrice !== price) {
-          throw new Error(`Price mismatch for item: ${name}. Expected: ${expectedTotalPrice}, Received: ${price}`);
-        }
-  
-        calculatedTotal += expectedTotalPrice;
-  
-        // Prepare bulkWrite operation for sale
-        newOperations.push({
-          updateOne: {
-            filter: { name: name },
-            update: { $inc: { quantity: -quantity }, $set: { stock } },
-          },
-        });
-  
-        historyRecords.push({
-          employee: createdBy,
-          item: dbItem._id,
-          action: "Sale",
-          deltaQuantity: -quantity,
-          currentQuantity: dbItem.quantity - quantity,
-          purchasePricePerUnit: dbItem.buying_price_per_unit,
-          sellingPricePerUnit: dbItem.selling_price_per_unit,
-          discountPercent: 0,
-          totalPrice: expectedTotalPrice,
-        });
-      });
-  
-      await Promise.all(saleHistoryPromises);
-  
-      // Perform bulkWrite for new items
-      const saleResult = await Item.bulkWrite(newOperations);
-  
-      // Check total price
-      if (calculatedTotal !== total) {
         return res.status(400).json({
-          success: false,
-          message: `Total price mismatch. Expected: ${calculatedTotal}, Received: ${total}`,
+            success: false,
+            message: "Invalid input. Please provide all required fields.",
         });
-      }
-  
-      const itemswithprice = items.map(item => {
-        const { totalAmount, ...rest } = item; // Destructure to remove `totalamount`
-        return { ...rest, price: totalAmount }; // Add `price` with the same value
-      });
-      
-      
-      oldinvoice.set({ createdBy, customername, items: itemswithprice, total });
-      await oldinvoice.save();
-  
-      // Save all history records
-      await ItemsHistory.insertMany(historyRecords);
-  
-      console.timeEnd("Runtime");
-  
-      return res.status(200).json({
-        success: true,
-        message: "Invoice updated successfully.",
-        invoice: oldinvoice,
-        restoreResult,
-        saleResult,
-      });
-    } catch (error) {
-      console.error("Error during invoice update:", error);
-      return res.status(500).json({
-        success: false,
-        message: error.message || "An error occurred while updating the invoice.",
-      });
     }
-  };
+
+    try {
+        // Fetch the old invoice
+        const oldinvoice = await Invoice.findById(oldinvoice_id);
+        if (!oldinvoice) {
+            return res.status(404).json({
+                success: false,
+                message: "Invoice ID is either wrong or does not exist.",
+            });
+        }
+
+        const historyRecords = [];
+        const restoreOperations = oldinvoice.items.map((olditem) => ({
+            updateOne: {
+                filter: { name: olditem.name },
+                update: { $inc: { quantity: olditem.quantity } },
+            },
+        }));
+
+        // Perform bulkWrite for restoring old item quantities
+        const restoreResult = await Item.bulkWrite(restoreOperations);
+
+        const restoreHistoryPromises = oldinvoice.items.map(async (olditem) => {
+            const dbItem = await Item.findOne({ name: olditem.name });
+            if (!dbItem) {
+                throw new Error(`Item not found: ${olditem.name}`);
+            }
+
+            historyRecords.push({
+                employee: oldinvoice.createdBy,
+                item: dbItem._id,
+                action: "Returned",
+                deltaQuantity: olditem.quantity,
+                currentQuantity: dbItem.quantity,
+                purchasePricePerUnit: dbItem.buying_price_per_unit,
+                sellingPricePerUnit: dbItem.selling_price_per_unit,
+                discountPercent: 0,
+                totalPrice: 0,
+            });
+        });
+
+        await Promise.all(restoreHistoryPromises);
+
+        // Create a new version of the invoice
+        oldinvoice.versions.push({
+            __v: oldinvoice.__v,
+            createdBy: oldinvoice.createdBy,
+            createdAt: oldinvoice.createdAt,
+            items: oldinvoice.items,
+            total: oldinvoice.total,
+        });
+
+        // Processing new items and calculating totals
+        let calculatedTotal = 0;
+        const newOperations = [];
+
+        const saleHistoryPromises = items.map(async (item) => {
+            const { name, quantity } = item;
+            const price = item.totalAmount;
+            if (!name || !quantity || quantity <= 0 || !price) {
+                throw new Error(`Invalid data for item: ${name}`);
+            }
+
+            const dbItem = await Item.findOne({ name });
+            if (!dbItem) {
+                throw new Error(`Item not found: ${name}`);
+            }
+
+            if (dbItem.quantity < quantity) {
+                throw new Error(`Insufficient stock for item: ${name}`);
+            }
+
+            let stock = "Available";
+            if (dbItem.quantity - quantity === 0) {
+                stock = "empty";
+            } else if (dbItem.quantity - quantity < dbItem.required_quantity) {
+                stock = "Low stock needs shelving";
+            }
+
+            const expectedTotalPrice = dbItem.selling_price_per_unit * quantity;
+            if (expectedTotalPrice !== price) {
+                throw new Error(`Price mismatch for item: ${name}. Expected: ${expectedTotalPrice}, Received: ${price}`);
+            }
+
+            calculatedTotal += expectedTotalPrice;
+
+            // Prepare bulkWrite operation for sale
+            newOperations.push({
+                updateOne: {
+                    filter: { name: name },
+                    update: { $inc: { quantity: -quantity }, $set: { stock } },
+                },
+            });
+
+            historyRecords.push({
+                employee: createdBy,
+                item: dbItem._id,
+                action: "Sale",
+                deltaQuantity: -quantity,
+                currentQuantity: dbItem.quantity - quantity,
+                purchasePricePerUnit: dbItem.buying_price_per_unit,
+                sellingPricePerUnit: dbItem.selling_price_per_unit,
+                discountPercent: percentdiscount,
+                totalPrice: expectedTotalPrice,
+            });
+        });
+
+        await Promise.all(saleHistoryPromises);
+
+        // Perform bulkWrite for new items
+        const saleResult = await Item.bulkWrite(newOperations);
+
+        // Calculate discount
+        const totalbeforeDiscount = calculatedTotal;
+        const discount = (percentdiscount / 100) * calculatedTotal;
+        calculatedTotal = calculatedTotal - discount;
+
+        // Check total price
+        if (calculatedTotal !== total) {
+            return res.status(400).json({
+                success: false,
+                message: `Total price mismatch. Expected: ${calculatedTotal}, Received: ${total}`,
+            });
+        }
+
+        const itemswithprice = items.map(item => {
+            const { totalAmount, ...rest } = item; // Destructure to remove totalAmount
+            return { ...rest, price: totalAmount }; // Add price with the same value
+        });
+
+        // Update the invoice details
+        oldinvoice.set({
+            createdBy,
+            customername,
+            items: itemswithprice,
+            percentdiscount,
+            total: calculatedTotal,
+        });
+
+        await oldinvoice.save();
+
+        // Save all history records
+        await ItemsHistory.insertMany(historyRecords);
+
+        // Generate PDF asynchronously
+        const employee = await Employee.findOne({ _id: createdBy });
+        const pdfBuffer = await receiptpdf(employee.name, oldinvoice, totalbeforeDiscount);  // Wait for the PDF buffer
+
+        // Save the PDF locally
+        const filePath = path.join(__dirname, 'generated_pdfs', `invoice_${oldinvoice._id}.pdf`);
+        await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
+        await fs.promises.writeFile(filePath, pdfBuffer);
+        console.log(`PDF saved successfully at ${filePath}`);
+
+        // Set headers to send PDF as response
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `attachment; filename=invoice_${oldinvoice._id}.pdf`,
+            'Content-Length': pdfBuffer.length,
+        });
+
+        return res.send(pdfBuffer);
+    } catch (error) {
+        console.error("Error during invoice update:", error);
+        return res.status(500).json({
+            success: false,
+            message: error.message || "An error occurred while updating the invoice.",
+        });
+    }
+};
   
 exports.oneinvoicepdf =async (req,res) => {
   const invoice = await Invoice.findById(req.params.id);

@@ -16,6 +16,8 @@ const employee = new mongoose.Schema({
     role: { type: String, enum: ['admin', 'employee'], default: 'employee' },
     address: {type : String, required: true},
     verified: {type: Boolean, default: false},
+    employeeCode: { type: String },
+    adminCode: { type: String },
 });
 
 employee.index ({username : 1})

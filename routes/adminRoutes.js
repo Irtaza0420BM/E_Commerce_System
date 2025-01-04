@@ -9,7 +9,8 @@ router.get('/', async(req,res) => {
 router.get('/dashboard', adminController.dashboard)
 router.post('/signup' , adminController.adminRegistration)  
 router.get('/employees' , adminController.unverifiedemployees)
-router.post('/verify', adminController.verifyEmployee)
+router.post('/action', adminController.verifyEmployee)
 router.post('/delete', adminController.deleteEmployee)
+router.get('/stockinfos', adminController.stockinfos)
 
 module.exports = router
