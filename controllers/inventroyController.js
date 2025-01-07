@@ -43,50 +43,33 @@ exports.createItem =  async(req, res) =>
 
 exports.showItems= async(req, res) => {
   try {
-    const result= await Item.aggregate([
-      {
-        $addFields: {
-          // Calculate the ratio of available quantity to required quantity
-          ratio: { $divide: ["$quantity", "$required_quantity"] },
-        },
-      },
-      {
-        $addFields: {
-          sold_percentage: {
-            $cond: {
-              if: { $eq: ["$ratio", 0] },
-              then: 100, // If ratio is 0, sold percentage is 100%
-              else: {
-                $cond: {
-                  if: { $lt: ["$ratio", 2] }, // If ratio < 2
-                  then: { $multiply: ["$ratio", 50] }, // Multiply ratio by 50
-                  else: { $divide: [1, "$ratio"] }, // Else divide 1 by ratio
-                },
-              },
-            },
+    const result= await Item.aggregate([      {
+      $addFields: {
+        stock: {
+          $cond: {
+            if: { $gte: ["$quantity", "$required_quantity"] },
+            then: "Available",
+            else: "Not Available",
           },
         },
       },
-      {
-        $group: {
-          _id: "$stock", // Group by the `stock` field (e.g., "available" or "low")
-          total_items: { $sum: 1 }, // Count the total items in each group
-          average_ratio: { $avg: "$ratio" }, // Calculate the average ratio
-          average_sold_percentage: { $avg: "$sold_percentage" }, // Calculate the average sold percentage
-          items: {
-            $push: {
-              name: "$name",
-              item: "$item", // Include item details in the group
-              quantity: "$quantity",
-              required_quantity: "$required_quantity",
-              ratio: "$ratio",
-              sold_percentage: "$sold_percentage",
-            },
+    },
+    // 2) Group by the new `stock` field
+    {
+      $group: {
+        _id: "$stock",
+        total_items: { $sum: 1 },
+        items: {
+          $push: {
+            name: "$name",
+            item: "$item",
+            quantity: "$quantity",
+            required_quantity: "$required_quantity",
           },
         },
       },
-    ]
-    );
+    },
+  ]);
     res.status(200).json({success: true , result});
   } catch (error) {
     res.status(400).json({success: false , message : "Somehow we are unable to get Items Data."})

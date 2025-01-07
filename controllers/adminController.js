@@ -97,11 +97,8 @@ exports.dashboard = async (req, res) => {
       getSalesMetrics(startDate, endDate),
       get7daysMetrics()
     ]);
-
-    console.log(salesMetrics);
-
-    const dashboardMetrics = itemMetrics[0]?.ItemsInfo || {};
-
+    const dashboardMetrics = itemMetrics[0]?.ItemsInfo[0] || {};
+    console.log(itemMetrics[0]?.lowStockInfo)
     // Step 1: Generate the last 7 dates including today
     const generateLast7Dates = () => {
       const dates = [];
@@ -191,7 +188,6 @@ exports.unverifiedemployees = async(req, res) => {
 
 exports.verifyEmployee = async (req, res) => {
   try {
-      console.log(req.body);
       const { payload, action } = req.body;
       const employeeId = payload.employeeId;
       const string = action;
@@ -231,7 +227,6 @@ exports.deleteEmployee = async(req, res) => {
   try {
       const { employeeId } = req.body;
       const toVerifyEmployee = await Employee.findByIdAndDelete({ _id: employeeId });
-      console.log(toVerifyEmployee)
   
       if (!toVerifyEmployee) {
           return res.status(404).json({ success: false, message: "Employee not found." });

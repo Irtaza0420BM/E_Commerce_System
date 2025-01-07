@@ -10,8 +10,8 @@ const { identifier } = require('../middlewares/authenticate.js');
 
 
 exports.generatereceipts = async (req, res) => {
-  console.log(req.user, " I am here")
   const userId = req.user.userId;
+  console.log("here")
     const { customername, items, total, percentdiscount = 0 } = req.body;
     if (!customername || !items || !Array.isArray(items) || items.length === 0 || !total) {
       return res.status(400).json({
@@ -54,7 +54,7 @@ exports.generatereceipts = async (req, res) => {
         if (dbItem.quantity - quantity === 0) {
           newstock = "empty";
         } else if (dbItem.quantity - quantity < dbItem.required_quantity) {
-          newstock = "checking";
+          newstock = "Low";
         }
   
         const expectedTotalPrice = quantity * dbItem.selling_price_per_unit;
@@ -88,7 +88,7 @@ exports.generatereceipts = async (req, res) => {
       }
       const totalbeforeDiscount = calculatedTotal;
       const discount = (percentdiscount / 100) * total;
-      calculatedTotal = calculatedTotal - discount;
+      calculatedTotal = Math.round((calculatedTotal - discount) * 100) / 100;;
   
       // if (calculatedTotal !== total) {
       //   return res.status(400).json({
@@ -109,6 +109,7 @@ exports.generatereceipts = async (req, res) => {
       );
       const id = "INV-" + counter.sequence_value;
       console.log(id)  
+
       const invoice = await Invoice.create({
         _id: id,
         createdBy: userId,
@@ -124,19 +125,21 @@ exports.generatereceipts = async (req, res) => {
       const pdfBuffer = await receiptpdf(name.name, invoice, totalbeforeDiscount);  // Wait for the PDF buffer
   
       // Save the PDF locally
+      console.log("sending data")
       const filePath = path.join(__dirname, 'generated_pdfs', `invoice_${invoice._id}.pdf`);
       await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
       await fs.promises.writeFile(filePath, pdfBuffer);
       console.log(`PDF saved successfully at ${filePath}`);
-  
+      console.log("sending data")
+
       // Set headers to send PDF as response
       res.set({
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename=invoice_${invoice._id}.pdf`,
         'Content-Length': pdfBuffer.length,
       });
-  
-      return res.send(pdfBuffer);
+      console.log("sending data")
+      return res.status(200).send(pdfBuffer);
     } catch (error) {
       console.error(error);
       return res.status(500).json({
@@ -258,7 +261,6 @@ exports.updateReceipt = async (req, res) => {
             message: "Invalid input. Please provide all required fields.",
         });
     }
-
     try {
         // Fetch the old invoice
         const oldinvoice = await Invoice.findById(oldinvoice_id);
@@ -268,7 +270,7 @@ exports.updateReceipt = async (req, res) => {
                 message: "Invoice ID is either wrong or does not exist.",
             });
         }
-
+        console.log("2nd if done")
         const historyRecords = [];
         const restoreOperations = oldinvoice.items.map((olditem) => ({
             updateOne: {
@@ -334,7 +336,7 @@ exports.updateReceipt = async (req, res) => {
             if (dbItem.quantity - quantity === 0) {
                 stock = "empty";
             } else if (dbItem.quantity - quantity < dbItem.required_quantity) {
-                stock = "Low stock needs shelving";
+                stock = "Low";
             }
 
             const expectedTotalPrice = dbItem.selling_price_per_unit * quantity;
